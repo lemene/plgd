@@ -134,6 +134,7 @@ sub runJob ($$$) {
     requireFiles(@{$job->ifiles});
     if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
         deleteFiles(@{$job->gfiles}) if ($job->gfiles); 
+        deleteFiles("$script.done"); 
 
         plgdInfo("Start " . $job->msg . ".") if ($job->msg);
 
@@ -235,7 +236,7 @@ sub waitScriptsGrid($$$$) {
             my $jobid = $running{$s};
             my $state = checkScriptGrid($env, $cfg, $s, $jobid);
             if ($state eq "" or $state eq "C") {
-                if (waitScript($s, 5, 5, 1)) {
+                if (waitScript($s, 60, 5, 1)) {
                     push @finished, $s
                 } else {
                     plgdError("Failed to get script result, id=$jobid, $s")
@@ -253,13 +254,13 @@ sub waitScriptsGrid($$$$) {
 sub submitScriptGrid($$$) {
     my ($env, $cfg, $script) = @_;
     if (%$env{"GridEngine"} eq "PBS") {
-        return submitScriptPbs($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"});
+        return submitScriptPbs($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"}, %$cfg{"GRID_OPTIONS"});
     } elsif (%$env{"GridEngine"} eq "SGE") {
-        return submitScriptSge($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"});
+        return submitScriptSge($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"}, %$cfg{"GRID_OPTIONS"});
     } elsif (%$env{"GridEngine"} eq "LSF") {
-        return submitScriptLsf($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"});
+        return submitScriptLsf($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"}, %$cfg{"GRID_OPTIONS"});
     } elsif (%$env{"GridEngine"} eq "Slurm") {
-        return submitScriptSlurm($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"});
+        return submitScriptSlurm($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"}, %$cfg{"GRID_OPTIONS"});
     } else {
         plgdError("Not support Grid ". %$env{"GridEngine"});
     }

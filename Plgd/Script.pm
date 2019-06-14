@@ -3,7 +3,7 @@ package Plgd::Script;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT =qw(isScriptDone writeScript writeScripts runScriptLocal isScriptSucc isScriptPatternSucc getScriptReturn waitScript wrapCommands checkScripts);
+@EXPORT =qw(isScriptDone writeScript writeScripts runScriptLocal isScriptSucc isScriptPatternSucc getScriptReturn waitScript checkScripts);
 
 use strict;
 use Plgd::Utils;
@@ -168,13 +168,26 @@ sub getScriptReturn($) {
 sub wrapCommands {
     my $str = "";
     foreach my $c (@_) {
+        #$str = $str . 
+        #       "if [ \$retVal -eq 0 ]; then\n" .
+        #       "  $c\n" .
+        #       "  temp_result=\$?\n" .
+        #       "  if [ \$retVal -eq 0 ]; then\n".
+        #       "    retVal=\$temp_result\n" .
+        #       "  fi\n" .
+        #       "fi\n";
         $str = $str . 
                "if [ \$retVal -eq 0 ]; then\n" .
                "  $c\n" .
-               "  temp_result=\$?\n" .
-               "  if [ \$retVal -eq 0 ]; then\n".
-               "    retVal=\$temp_result\n" .
-               "  fi\n" .
+               "  temp_result=(\${PIPESTATUS[*]})\n" .
+               "  for i in \${temp_result[*]} \n" .
+               "  do\n" .
+               "    if [ \$retVal -eq 0 ]; then\n" .
+               "      retVal=\$i\n" .
+               "    else\n" .
+               "      break\n" .
+               "    fi\n" .
+               "  done\n".
                "fi\n";
     }
     return $str;

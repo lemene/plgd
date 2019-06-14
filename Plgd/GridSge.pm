@@ -22,18 +22,19 @@ sub detectSge () {
 }
 
 
-sub submitScriptSge($$$) {
+sub submitScriptSge($$$$) {
 
-    my ($script, $thread, $memory) = @_;
+    my ($script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
 
     my $cmd = "qsub -cwd";
-    $cmd = $cmd . " -N $jobName";                         # name
-    $cmd = $cmd . " -pe smp $thread" if ($thread > 0);     # thread
-    $cmd = $cmd . " -l vf=$memory" if ($memory > 0);     # memory
-    $cmd = $cmd . " -o $script.log -j yes";                      # output
-    $cmd = $cmd . " $script";                             # script
+    $cmd = $cmd . " -N $jobName";                           # name
+    $cmd = $cmd . " -pe smp $thread" if ($thread > 0);      # thread
+    $cmd = $cmd . " -l vf=$memory" if ($memory > 0);        # memory
+    $cmd = $cmd . " -o $script.log -j yes";                 # output
+    $cmd = $cmd . " $options";                              # other options
+    $cmd = $cmd . " $script";                               # script
     plgdInfo("Sumbit command: $cmd");    
     my $result = `$cmd`;
     my @items = split(" ", $result);

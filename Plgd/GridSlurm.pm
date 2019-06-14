@@ -23,18 +23,19 @@ sub detectSlurm () {
 }
 
 
-sub submitScriptSlurm ($$$) {
+sub submitScriptSlurm ($$$$) {
     plgdWarn("TODO: The code for Slurm isn't tested");
 
-    my ($script, $thread, $memory) = @_;
+    my ($script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
 
     my $cmd = "sbatch -D `pwd`";
     $cmd = $cmd . " -J $jobName";                                           # name
     $cmd = $cmd . " --cpus-per-task=$thread"  if ($thread > 0);             # thread
-    $cmd = $cmd . " --mem-per-cpu=$memory" if ($memory > 0);                       # memory
+    $cmd = $cmd . " --mem-per-cpu=$memory" if ($memory > 0);                # memory
     $cmd = $cmd . " -o $script.log";                                        # output
+    $cmd = $cmd . " $options";                                              # other options
     $cmd = $cmd . " $script";                                               # script
     plgdInfo("Sumbit command: $cmd");    
     my $result = `$cmd`;

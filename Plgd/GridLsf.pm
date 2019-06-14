@@ -22,18 +22,19 @@ sub detectLsf () {
     }
 }
 
-sub submitScriptLsf($$$) {
+sub submitScriptLsf($$$$) {
     plgdWarn("TODO: The code for Lsf isn't tested");
-    my ($script, $thread, $memory) = @_;
+    my ($script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
 
     my $cmd = "bsub ";
     $cmd = $cmd . " -J $jobName";                                           # name
-    $cmd = $cmd . " -R span[hosts=1] -n $thread"  if ($thread > 0);             # thread
-    $cmd = $cmd . " -M $memory" if ($memory > 0);                       # memory
+    $cmd = $cmd . " -R span[hosts=1] -n $thread"  if ($thread > 0);         # thread
+    $cmd = $cmd . " -M $memory" if ($memory > 0);                           # memory
     $cmd = $cmd . " -o $script.log";                                        # output
     $cmd = $cmd . " -e $script.log";                                        # output
+    $cmd = $cmd . " $options";                                              # other options
     $cmd = $cmd . " $script";                                               # script
     plgdInfo("Sumbit command: $cmd");    
     my $result = `$cmd`;

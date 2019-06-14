@@ -47,19 +47,20 @@ sub detectPbs() {
 }
 
 
-sub submitScriptPbs($$$) {
+sub submitScriptPbs($$$$) {
     
-    my ($script, $thread, $memory) = @_;
+    my ($script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
 
     my $cmd = "qsub -j oe";
     $cmd = $cmd . " -d `pwd`" if ($isPro == 0); 
-    $cmd = $cmd . " -N $jobName";                         # name
-    $cmd = $cmd . " -l nodes=1:ppn=$thread";              # thread
-    $cmd = $cmd . " -l mem=$memory" if ($memory > 0);     # memory
-    $cmd = $cmd . " -o $script.log";                      # output
-    $cmd = $cmd . " $script";                             # script
+    $cmd = $cmd . " -N $jobName";                               # name
+    $cmd = $cmd . " -l nodes=1:ppn=$thread" if ($thread > 0);   # thread
+    $cmd = $cmd . " -l mem=$memory" if ($memory > 0);           # memory
+    $cmd = $cmd . " -o $script.log";                            # output
+    $cmd = $cmd . " $options";                                  # other options
+    $cmd = $cmd . " $script";                                   # script
     plgdInfo("Sumbit command: $cmd");    
     my $result = `$cmd`;
 
@@ -83,7 +84,7 @@ sub checkScriptPbs($$) {
     open(F, "qstat |");
     while (<F>) {
         my @items = split(" ", $_);
-        if (scalar @items >= 6 and $items[0] eq $jobid) {
+        if (scalar @items >= 6 and $jobid =~ /$items[0]/) {
             $state = $items[4];
             break;
         }
