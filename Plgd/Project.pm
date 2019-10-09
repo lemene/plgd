@@ -3,7 +3,8 @@ package Plgd::Project;
 require Exporter;
 
 @ISA    = qw(Exporter);
-@EXPORT = qw(serialRunJobs parallelRunJobs loadConfig loadEnv initializeProject runScript runScripts detectGrid stopRunningScripts scriptEnv runSingleTask runPatternTask runMultiTask);
+@EXPORT = qw(serialRunJobs parallelRunJobs loadConfig loadEnv initializeProject runScript runScripts 
+            detectGrid stopRunningScripts scriptEnv runSingleTask runPatternTask runMultiTask, switchRunningConfig, resumeConfig);
 
 use strict;
 
@@ -35,6 +36,31 @@ sub loadConfig($$) {
     }
 }
 
+sub switchRunningConfig($$) {
+    my ($cfg, $prefix) = @_;
+
+    my $switch = sub ($$$$) {
+        my ($cfg, $old, $name) = @_;
+        if ($cfg->{$prefix . "_" . $name} ne "") {
+           $old->{$name} = $cfg->{$name};
+           $cfg->{$name} = $cfg->{$prefix . "_" . $name};
+        }
+    };
+
+    my $old = {};
+    $switch->($cfg, $old, "MEMORY");
+    $switch->($cfg, $old, "THREADS");
+    return $old;
+}
+
+    
+sub resumeConfig($$) {
+    my ($cfg, $old) = @_;
+
+    foreach my $k (keys %$old) {
+        $cfg->{$k} = $old->{$k};
+    }
+}
 
 sub loadEnv($) {
     my ($cfg) = @_;
