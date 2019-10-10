@@ -4,7 +4,7 @@ require Exporter;
 
 @ISA    = qw(Exporter);
 @EXPORT = qw(serialRunJobs parallelRunJobs loadConfig loadEnv initializeProject runScript runScripts 
-            detectGrid stopRunningScripts scriptEnv runSingleTask runPatternTask runMultiTask, switchRunningConfig, resumeConfig);
+            detectGrid stopRunningScripts scriptEnv runSingleTask runPatternTask runMultiTask switchRunningConfig resumeConfig);
 
 use strict;
 
