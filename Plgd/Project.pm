@@ -181,7 +181,8 @@ sub runJob ($$$) {
             parallelRunJobs($env, $cfg, @{$job->pjobs});
             echoFile("$script.done", "0");
         } else {
-            die "never come here"
+            pldgWarn("It is an empty job");
+            # die "never come here"
         }
 
         waitRequiredFiles($WAITING_FILE_TIME, @{$job->ofiles});
