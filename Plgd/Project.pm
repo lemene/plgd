@@ -69,7 +69,7 @@ sub loadEnv($) {
     $env{"OntsaBinPath"} = $FindBin::RealBin;
     $env{"FsaBinPath"} = $FindBin::RealBin;
 
-    if (%$cfg{"USE_GRID"}) {
+    if (%$cfg{"GRID_NODE"} > 0) {
         detectGrid(\%env);
     }
 
@@ -119,7 +119,7 @@ sub parallelRunJobs {
         if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
             unlink @{$job->ofiles};
 
-            writeScript($script, scriptEnv($env), @{$job->cmds});
+            writeScript($script, scriptEnv($env, $cfg), @{$job->cmds});
             push @scripts, $script;
             push @running, $job;
         } else {
@@ -165,7 +165,7 @@ sub runJob ($$$) {
         plgdInfo("Start " . $job->msg . ".") if ($job->msg);
 
         if (scalar @{$job->cmds} > 0) {
-            writeScript($script, scriptEnv($env), @{$job->cmds});
+            writeScript($script, scriptEnv($env, $cfg), @{$job->cmds});
             runScript($env, $cfg, $script);
         } elsif (scalar @{$job->funcs} > 0) {
             foreach my $f (@{$job->funcs}) {
@@ -196,13 +196,12 @@ sub runJob ($$$) {
     }
 }
 
-sub scriptEnv($) {
-    my ($env) = @_;
+sub scriptEnv($$) {
+    my ($env, $cfg) = @_;
 
-    my $ontsaBinPath = %$env{"OntsaBinPath"};
-    my $fsaBinPath = %$env{"FsaBinPath"};
+    my $binPath = %$cfg{"BIN_PATH"};
 
-    return "export PATH=$ontsaBinPath:$fsaBinPath:\$PATH\n";
+    return "export PATH=$binPath:\$PATH\n";
 }
 
 
@@ -229,7 +228,7 @@ sub runScripts($$$) {
 sub _runScripts {
     my ($env, $cfg, @scripts) = @_;
     
-    if (%$cfg{"USE_GRID"} eq "true" and %$env{"GridEngine"} ) {
+    if (%$cfg{"GRID_NODE"} > 0 and %$env{"GridEngine"} ) {
         runScriptsGrid($env, $cfg, \@scripts);
     } else {
         foreach my $script (@scripts) {

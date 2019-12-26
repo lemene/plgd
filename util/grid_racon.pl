@@ -16,7 +16,6 @@ sub loadMyConfig() {
     my %cfg = ();
     #loadConfig($fname, \%cfg);
     $cfg{"THREADS"} = 20;
-    $cfg{"USE_GRID"} = "true";
     $cfg{"GRID_NODE"} = 6;
     return %cfg;
 }
