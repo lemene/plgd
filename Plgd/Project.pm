@@ -66,10 +66,9 @@ sub loadEnv($) {
     my ($cfg) = @_;
     my %env = {};
     $env{"WorkPath"} = getcwd();
-    $env{"OntsaBinPath"} = $FindBin::RealBin;
-    $env{"FsaBinPath"} = $FindBin::RealBin;
+    $env{"BinPath"} = $FindBin::RealBin;
 
-    if (%$cfg{"USE_GRID"}) {
+    if (%$cfg{"GRID_NODE"} > 0) {
         detectGrid(\%env);
     }
 
@@ -230,7 +229,7 @@ sub runScripts($$$) {
 sub _runScripts {
     my ($env, $cfg, @scripts) = @_;
     
-    if (%$cfg{"USE_GRID"} eq "true" and %$env{"GridEngine"} ) {
+    if (%$cfg{"GRID_NODE"} > 0 and %$env{"GridEngine"} ) {
         runScriptsGrid($env, $cfg, \@scripts);
     } else {
         foreach my $script (@scripts) {
