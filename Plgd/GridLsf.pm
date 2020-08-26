@@ -15,7 +15,7 @@ sub detectLsf () {
     $path = trim($path);
 
     if (not $path eq "") {
-        plgdInfo("Found LSF, which is $path");
+        Plgd::Logger::info("Found LSF, which is $path");
         return "LSF"
     } else {
         return undef;
@@ -23,7 +23,7 @@ sub detectLsf () {
 }
 
 sub submitScriptLsf($$$$) {
-    plgdWarn("TODO: The code for Lsf isn't tested");
+    Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     my ($script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
@@ -36,29 +36,29 @@ sub submitScriptLsf($$$$) {
     $cmd = $cmd . " -e $script.log";                                        # output
     $cmd = $cmd . " $options";                                              # other options
     $cmd = $cmd . " $script";                                               # script
-    plgdInfo("Sumbit command: $cmd");    
+    Plgd::Logger::info("Sumbit command: $cmd");    
     my $result = `$cmd`;
 
     my @items = split(" ", $result);
     if (scalar @items >= 2) {
         return $items[1];
     } else {
-        plgdInfo("Failed to sumbit command");
+        Plgd::Logger::info("Failed to sumbit command");
     }
 }
 
 
 sub stopScriptLsf($) {
-    plgdWarn("TODO: The code for Lsf isn't tested");
+    Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     
     my ($job) = @_;
     my $cmd = "bkill $job";
-    plgdInfo("Stop script: $cmd");
+    Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
 sub checkScriptLsf($$) {
-    plgdWarn("TODO: The code for Lsf isn't tested");
+    Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     my ($script, $jobid) = @_;
     my $state = "";
     open(F, "bjobs -l $jobid |");

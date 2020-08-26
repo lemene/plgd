@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# 将可执行程序部署到服务器
+
+src=./
+server=$1
+
+case $server in
+  bio2)
+
+    dst=
+  ;;
+
+  b2)
+    dst=niefan@192.168.254.2:/home/niefan/b/work/plgd/
+  ;;
+
+  b3)
+    dst=niefan@192.168.254.3:/home/niefan/b/work/plgd/
+  ;;
+
+  b7)
+    dst=niefan@192.168.254.7:/home/niefan/work/plgd/
+  ;;
+
+  r3)
+    dst=niefan@172.32.0.3:/home/niefan/work/plgd/
+  ;;
+
+  xiao)
+    dst=chuanlex@222.200.180.21:/share/home/chuanlex/niefan/work/plgd
+  ;;
+  
+  *)
+  echo "server name error"
+  exit
+  ;;
+esac
+
+scp -r $src/Plgd $dst
+scp -r $src/script $dst

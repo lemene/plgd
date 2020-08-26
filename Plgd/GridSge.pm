@@ -14,7 +14,7 @@ use Plgd::Utils;
 
 sub detectSge () {
     if (defined($ENV{'SGE_ROOT'})) {
-        plgdInfo("Found Sun Grid Engine, which is " . $ENV{'SGE_ROOT'});
+        Plgd::Logger::info("Found Sun Grid Engine, which is " . $ENV{'SGE_ROOT'});
         return "SGE";
     } else {
         return undef;
@@ -35,13 +35,13 @@ sub submitScriptSge($$$$) {
     $cmd = $cmd . " -o $script.log -j yes";                 # output
     $cmd = $cmd . " $options";                              # other options
     $cmd = $cmd . " $script";                               # script
-    plgdInfo("Sumbit command: $cmd");    
+    Plgd::Logger::info("Sumbit command: $cmd");    
     my $result = `$cmd`;
     my @items = split(" ", $result);
     if (scalar @items >= 3) {
         return $items[2];
     } else {
-        plgdInfo("Failed to sumbit command");
+        Plgd::Logger::info("Failed to sumbit command");
     }
 }
 
@@ -49,7 +49,7 @@ sub submitScriptSge($$$$) {
 sub stopScriptSge($) {
     my ($job) = @_;
     my $cmd = "qdel $job";
-    plgdInfo("Stop script: $cmd");
+    Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 

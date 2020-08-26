@@ -8,8 +8,6 @@ require Exporter;
 
 use strict;
 
-use FindBin;
-use lib $FindBin::RealBin;
 use Cwd;
 use File::Basename;
 
@@ -22,9 +20,72 @@ use Plgd::GridSlurm;
 
 use Class::Struct;
 
-our %running = ();
+use Plgd::Logger;
+use constant Logger=>'Plgd::Logger';
+#use constant MakeJobSH => 'Galaxy::SGE::MakeJobSH';
 
-my $WAITING_FILE_TIME = 60;
+sub new {
+    my ($class, @params) = @_;
+     
+    my $self = {
+        cfg => {},
+        env => {},
+    };
+    bless($self, $class);
+
+    return $self;
+}
+
+
+# sub defaultConfig() {
+#     my %cfg = ();
+#     for my $i (0 .. $#defaultConfig){
+#         $cfg{$defaultConfig[$i][0]} = $defaultConfig[$i][1];
+#     }
+#     return %cfg;
+# }
+
+sub loadDefaultConfig() {
+    my ($self) = @_;
+    
+    for my $i (0 .. $#{$self->{defaultConfig}}){
+        $self->{cfg}{$self->{defaultConfig}[$i][0]} = 
+            $self->{defaultConfig}[$i][1];
+    }
+}
+
+
+sub loadEnv($) {
+    my ($cfg) = @_;
+    my %env = {};
+    $env{"WorkPath"} = getcwd();
+    $env{"BinPath"} = $FindBin::RealBin;
+
+    if (%$cfg{"GRID_NODE"} > 0) {
+        detectGrid(\%env);
+    }
+
+    $env{"running"} = ();
+    return %env;
+}
+
+sub initialize {
+    my ($self, $cfgfile) = @_;
+    printf("cfgfile $cfgfile\n");
+    $self->loadDefaultConfig();
+    loadConfig($cfgfile, $self->{cfg});
+
+    
+    $self->{env}{"WorkPath"} = getcwd();
+    $self->{env}{"BinPath"} = $FindBin::RealBin;
+
+    if ($self->{cfg}{"GRID_NODE"} > 0) {
+        detectGrid($self->{env});
+    }
+
+    $self->{env}{"running"} = ();
+
+}
 
 sub loadConfig($$) {
     my ($fname, $cfg) = @_;
@@ -35,6 +96,25 @@ sub loadConfig($$) {
         $cfg->{$items[0]} = trim($items[1]);
     }
 }
+
+sub writeConfigFile($$) {
+    my ($fname, $config) = @_;
+
+    open(F, "> $fname") or die;
+    foreach my $item (@$config) {
+        print F "$item->[0]=$item->[1]\n";
+    }
+}
+
+sub writeDefaultConfig {
+    my ($self, $fname) = @_;
+    writeConfigFile($fname, $self->{"defaultConfig"});
+}
+
+our %running = ();
+
+my $WAITING_FILE_TIME = 60;
+
 
 sub switchRunningConfig($$) {
     my ($cfg, $prefix) = @_;
@@ -62,19 +142,6 @@ sub resumeConfig($$) {
     }
 }
 
-sub loadEnv($) {
-    my ($cfg) = @_;
-    my %env = {};
-    $env{"WorkPath"} = getcwd();
-    $env{"BinPath"} = $FindBin::RealBin;
-
-    if (%$cfg{"GRID_NODE"} > 0) {
-        detectGrid(\%env);
-    }
-
-    $env{"running"} = ();
-    return %env;
-}
 
 struct Job => {
     prefunc => '$',
@@ -109,7 +176,7 @@ sub parallelRunJobs {
     foreach my $job (@jobs) {
         
         if (scalar @{$job->funcs} > 0 || scalar @{$job->jobs} > 0) {
-            plgdError("Only cmds can run parallel.");
+            Plgd::Logger::error("Only cmds can run parallel.");
         }
 
         my $script = "$prjDir/scripts/" . $job->name . ".sh";
@@ -122,14 +189,14 @@ sub parallelRunJobs {
             push @scripts, $script;
             push @running, $job;
         } else {
-            plgdInfo("Skip ". $job->msg . " for outputs are newer.") if ($job->msg);
+            Plgd::Logger::info("Skip ". $job->msg . " for outputs are newer.") if ($job->msg);
         }
     }
     
     
     if (scalar @scripts > 0) {
         foreach my $job (@running) {
-            plgdInfo("Parallelly start " . $job->msg . ".") if ($job->msg);
+            Plgd::Logger::info("Parallelly start " . $job->msg . ".") if ($job->msg);
         }
 
         runScripts($env, $cfg, \@scripts);
@@ -142,7 +209,7 @@ sub parallelRunJobs {
                 deleteFiles(@{$job->mfiles});
             }
 
-            plgdInfo("End " .$job->msg. ".") if ($job->msg);
+            Plgd::Logger::info("End " .$job->msg. ".") if ($job->msg);
         }
     }
 
@@ -161,7 +228,7 @@ sub runJob ($$$) {
         deleteFiles(@{$job->gfiles}) if ($job->gfiles); 
         deleteFiles("$script.done"); 
 
-        plgdInfo("Start " . $job->msg . ".") if ($job->msg);
+        Plgd::Logger::info("Start " . $job->msg . ".") if ($job->msg);
 
         if (scalar @{$job->cmds} > 0) {
             writeScript($script, scriptEnv($env), @{$job->cmds});
@@ -180,7 +247,7 @@ sub runJob ($$$) {
             parallelRunJobs($env, $cfg, @{$job->pjobs});
             echoFile("$script.done", "0");
         } else {
-            pldgWarn("It is an empty job");
+            Plgd::Logger::warn("It is an empty job");
             # die "never come here"
         }
 
@@ -189,9 +256,9 @@ sub runJob ($$$) {
             deleteFiles(@{$job->mfiles});
         }
 
-        plgdInfo("End " .$job->msg . ".") if ($job->msg);
+        Plgd::Logger::info("End " .$job->msg . ".") if ($job->msg);
     } else {
-        plgdInfo("Skip ". $job->msg . " for outputs are newer.") if ($job->msg);
+        Plgd::Logger::info("Skip ". $job->msg . " for outputs are newer.") if ($job->msg);
     
     }
 }
@@ -265,7 +332,7 @@ sub waitScriptsGrid($$$$) {
                 if (waitScript($s, 60, 5, 1)) {
                     push @finished, $s
                 } else {
-                    plgdError("Failed to get script result, id=$jobid, $s")
+                    Plgd::Logger::error("Failed to get script result, id=$jobid, $s")
                 }
             } else {
                 sleep(5);
@@ -288,7 +355,7 @@ sub submitScriptGrid($$$) {
     } elsif (%$env{"GridEngine"} eq "Slurm") {
         return submitScriptSlurm($script, %$cfg{"THREADS"}, %$cfg{"MEMORY"}, %$cfg{"GRID_OPTIONS"});
     } else {
-        plgdError("Not support Grid ". %$env{"GridEngine"});
+        Plgd::Logger::error("Not support Grid ". %$env{"GridEngine"});
     }
 }
 
@@ -305,7 +372,7 @@ sub checkScriptGrid($$$$) {
     } elsif (%$env{"GridEngine"} eq "Slurm") {
         $state = checkScriptSlurm($script, $jobid)
     } else {
-        plgdError("Not support Grid ". %$env{"GridEngine"});
+        Plgd::Logger::error("Not support Grid ". %$env{"GridEngine"});
     }
 
     return $state
@@ -319,9 +386,9 @@ sub runScriptsGrid($$$) {
     my $node = %$cfg{"GRID_NODE"};
 
     foreach my $s (@$scripts) {
-        plgdInfo("Run script $s");
+        Plgd::Logger::info("Run script $s");
         my $r = submitScriptGrid($env, $cfg, $s);
-        plgdError("Failed to submit script $s") if (not $r);
+        Plgd::Logger::error("Failed to submit script $s") if (not $r);
 
         $running{$s} = $r;
         my $rsize = keys %running;
@@ -355,7 +422,7 @@ sub stopScirptGrid($$$$) {
     } elsif (%$env{"GridEngine"} == "Slurm") {
         return stopScriptSlurm($jobid);
     } else {
-        plgdError("Not support Grid ". %$env{"GridEngine"});
+        Plgd::Logger::error("Not support Grid ". %$env{"GridEngine"});
     }
 }
 

@@ -1,34 +1,50 @@
-package Plgd::GridPbs;
+package Plgd::RunnerPbs;
 
-require Exporter;
-
-@ISA    = qw(Exporter);
-@EXPORT = qw(detectPbs submitScriptPbs stopScriptPbs checkScriptPbs);
 
 use Cwd;
 use File::Basename;
 
+use Plgd::Runner;
 use Plgd::Utils;
 
+use strict;
+
+our @ISA = qw(Plgd::Runner);
+
+
+sub new { 
+    my ($class) = @_;
+    my $self = $class->SUPER::new(); 
+    detect($self);
+    bless $self, $class; 
+    return $self; 
+} 
+
+sub valid($) {
+    my ($self) = @_;
+    return not $self->{path} eq "";
+}
 
 our $isPro = "";
 our $version = "";
 our $VERSION = '1.00';
 
-sub detectPbs() {
-    my $path = `which pbsnodes 2> /dev/null`;
-    $path = trim($path);
+sub detect($) {
+    my ($self) = @_;
 
-    if (not $path eq "") {
+    my $path = `which pbsnodes 2> /dev/null`;
+    $self->{path} = trim($path);
+
+    if (not $self->{path} eq "") {
 
         open(F, "pbsnodes --version 2>&1 |");
         while (<F>) {
             if (m/pbs_version\s+=\s+(.*)/) {
-                $isPro   =  1;
-                $version = $1;
+                $self->{isPro}   =  1;
+                $self->{version} = $1;
             }
             if (m/Version:\s+(.*)/) {
-                $version = $1;
+                $self->{version} = $1;
             }
         }
         close(F);
@@ -47,7 +63,8 @@ sub detectPbs() {
 }
 
 
-sub submitScriptPbs($$$$) {
+
+sub submitScript($$$$) {
     
     my ($script, $thread, $memory, $options) = @_;
 

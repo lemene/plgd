@@ -15,7 +15,7 @@ sub detectSlurm () {
     $path = trim($path);
 
     if (not $path eq "") {
-        plgdInfo("Found Slurm, which is $path");
+        Plgd::Logger::info("Found Slurm, which is $path");
         return "Slurm";
     } else {
         return undef;
@@ -24,7 +24,7 @@ sub detectSlurm () {
 
 
 sub submitScriptSlurm ($$$$) {
-    plgdWarn("TODO: The code for Slurm isn't tested");
+    Plgd::Logger::warn("TODO: The code for Slurm isn't tested");
 
     my ($script, $thread, $memory, $options) = @_;
 
@@ -37,28 +37,28 @@ sub submitScriptSlurm ($$$$) {
     $cmd = $cmd . " -o $script.log";                                        # output
     $cmd = $cmd . " $options";                                              # other options
     $cmd = $cmd . " $script";                                               # script
-    plgdInfo("Sumbit command: $cmd");    
+    Plgd::Logger::info("Sumbit command: $cmd");    
     my $result = `$cmd`;
 
     my @items = split(" ", $result);
     if (scalar @items >= 4) {
         return $items[3];
     } else {
-        plgdInfo("Failed to sumbit command");
+        Plgd::Logger::info("Failed to sumbit command");
     }
 }
 
 sub stopScriptSlurm($) {
-    plgdWarn("TODO: The code for Slurm isn't tested");
+    Plgd::Logger::warn("TODO: The code for Slurm isn't tested");
     
     my ($job) = @_;
     my $cmd = "scancel $job";
-    plgdInfo("Stop script: $cmd");
+    Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
 sub checkScriptSlurm($$) {
-    plgdWarn("TODO: The code for Slurm isn't tested");
+    Plgd::Logger::warn("TODO: The code for Slurm isn't tested");
 
     my ($script, $jobid) = @_;
     my $state = "";

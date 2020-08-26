@@ -206,6 +206,7 @@ sub jobRaconGrid($$$$$$$$$$) {
 sub jobPolishWithMinimap2Racon($$$$$$$$$) {
     my ($env, $cfg, $name, $contigs, $reads, $polished, $options, $blockSize, $workDir) = @_;
 
+    print("dir: $workDir\n");
     mkdir $workDir;
 
     my $rd2ctg = "$workDir/rd2ctg.paf";
