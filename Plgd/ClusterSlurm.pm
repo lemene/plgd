@@ -1,32 +1,35 @@
-package Plgd::GridSlurm;
+package Plgd::ClusterSlurm;
 
-require Exporter;
-
-@ISA    = qw(Exporter);
-@EXPORT = qw(detectSlurm submitScriptSlurm stopScriptSlurm checkScriptSlurm);
+use Plgd::Cluster;
+our @ISA = qw(Plgd::Cluster);   # inherits from Cluster 
 
 use strict;
+use warnings;
 
 use File::Basename;
 use Plgd::Utils;
 
-sub detectSlurm () {    
+sub create ($) {   
+    my ($cls) = @_;
+
     my $path = `which sinfo 2> /dev/null`;
     $path = trim($path);
 
     if (not $path eq "") {
-        plgdInfo("Found Slurm, which is $path");
-        return "Slurm";
+        my $self = {
+            name => "Slurm",
+            path => $path
+        };
+        bless $self, $cls;
+        return $self;
     } else {
         return undef;
     }
 }
 
 
-sub submitScriptSlurm ($$$$) {
-    plgdWarn("TODO: The code for Slurm isn't tested");
-
-    my ($script, $thread, $memory, $options) = @_;
+sub submitScript ($$$$) {
+    my ($self, $script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
 
@@ -48,19 +51,15 @@ sub submitScriptSlurm ($$$$) {
     }
 }
 
-sub stopScriptSlurm($) {
-    plgdWarn("TODO: The code for Slurm isn't tested");
-    
-    my ($job) = @_;
+sub stopScript($) {
+    my ($self, $job) = @_;
     my $cmd = "scancel $job";
     plgdInfo("Stop script: $cmd");
     `$cmd`;
 }
 
-sub checkScriptSlurm($$) {
-    plgdWarn("TODO: The code for Slurm isn't tested");
-
-    my ($script, $jobid) = @_;
+sub checkScript($$$) {
+    my ($self, $script, $jobid) = @_;
     my $state = "";
     open(F, "squeue |");
     while (<F>) {

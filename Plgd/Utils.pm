@@ -8,13 +8,22 @@ require Exporter;
 use File::Path;
 use strict; 
 
-our $logLevel = 1;
+use Plgd::Logger;
 
 sub trim { 
     my $s = shift; 
     $s =~ s/^\s+|\s+$//g; 
     return $s 
 }
+
+
+
+sub fileLength($) {
+    my ($fname) = @_;
+    my @args = stat ($fname);
+    return $args[7];
+}
+
 
 sub deleteFiles {
     foreach my $p (@_) {
@@ -165,50 +174,19 @@ sub requireFiles {
 }
 
 
-sub currTime() {
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime;
-    $year += 1900; 
-    $mon += 1;
-    my $datetime = sprintf ("%d-%02d-%02d %02d:%02d:%02d", $year,$mon,$mday,$hour,$min,$sec);
-    return $datetime;
-}
-
-sub plgdLogLevel($) {
-    my ($level) = @_;
-
-    if ($level == "debug") {
-        $logLevel = 0;
-    } elsif ($level == "info") {
-        $logLevel = 1;
-    } elsif ($level == "warn") {
-        $logLevel = 2;
-    } elsif ($level == "error") {
-        $logLevel = 3;
-    } else {
-        plgdError("The log level: $level is not one of (debug, info, warn, error)");
-    }
-}
-
 sub plgdDebug($) {
-    plgdLog("Debug", @_[0]) if $logLevel <= 0;
+    Plgd::Logger::debug(@_[0]);
 }
 
 sub plgdInfo($) {
-    my ($msg) = @_;
-    plgdLog("Info", $msg) if $logLevel <= 1;
+    Plgd::Logger::info(@_[0]);
 }
 
 sub plgdWarn($) {
-    plgdLog("Warn", @_[0]) if $logLevel <= 2;
+    Plgd::Logger::warn(@_[0]);
 }
 
 sub plgdError($) {
-    plgdLog("Error", @_[0]);    # 
-    exit(1);
+    Plgd::Logger::error(@_[0]);
 }
  
-sub plgdLog($$) {
-    my ($type, $msg) = @_;
-    my $datetime = currTime();
-    print STDERR "$datetime [$type] $msg\n";
-}

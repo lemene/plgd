@@ -1,4 +1,4 @@
-package Plgd::GridPbs;
+package Plgd::ClusterPbs;
 
 require Exporter;
 
@@ -11,15 +11,17 @@ use File::Basename;
 use Plgd::Utils;
 
 
-our $isPro = "";
-our $version = "";
-our $VERSION = '1.00';
 
-sub detectPbs() {
+sub create($) {
+    my ($cls) = @_;
+
     my $path = `which pbsnodes 2> /dev/null`;
     $path = trim($path);
 
     if (not $path eq "") {
+
+        my $isPro = "";
+        my $version = "";
 
         open(F, "pbsnodes --version 2>&1 |");
         while (<F>) {
@@ -33,13 +35,14 @@ sub detectPbs() {
         }
         close(F);
     
-        if ($isPro == 0) {
-            plgdInfo("Found PBS/Torque '$version', which is $path");
-            return "PBS";
-        } else {
-            plgdInfo("Found PBS/Pro '$version', which is $path");
-            return "PBS";
-        }
+        my $self = {
+            name => "Slurm",
+            path => $path,
+            version => $version,
+            isPro => $isPro,
+        };
+        bless $self, $cls;
+        return $self;
 
     } else {
         return undef;
@@ -47,9 +50,11 @@ sub detectPbs() {
 }
 
 
-sub submitScriptPbs($$$$) {
+sub submitScript($$$$) {
     
-    my ($script, $thread, $memory, $options) = @_;
+    my ($self, $script, $thread, $memory, $options) = @_;
+
+    my $isPro = $self->{is_pro};
 
     my $jobName = basename($script);
 
@@ -61,25 +66,25 @@ sub submitScriptPbs($$$$) {
     $cmd = $cmd . " -o $script.log";                            # output
     $cmd = $cmd . " $options";                                  # other options
     $cmd = $cmd . " $script";                                   # script
-    plgdInfo("Sumbit command: $cmd");    
+    Plgd::Logger::info("Sumbit command: $cmd");    
     my $result = `$cmd`;
 
     if (not $result eq "") {
         return trim($result);
     } else {
-        plgdInfo("Failed to sumbit command");
+        Plgd::Logger::info("Failed to sumbit command");
     }
 }
 
-sub stopScriptPbs($) {
-    my ($job) = @_;
+sub stopScriptPbs($$) {
+    my ($self, $job) = @_;
     my $cmd = "qdel $job";
-    plgdInfo("Stop script: $cmd");
+    Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
-sub checkScriptPbs($$) {
-    my ($script, $jobid) = @_;
+sub checkScriptPbs($$$) {
+    my ($self, $script, $jobid) = @_;
     my $state = "";
     open(F, "qstat |");
     while (<F>) {

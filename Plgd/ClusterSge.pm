@@ -1,30 +1,34 @@
-package Plgd::GridSge;
+package Plgd::ClusterSge;
 
-require Exporter;
-
-@ISA    = qw(Exporter);
-@EXPORT = qw(detectSge submitScriptSge stopScriptSge checkScriptSge);
-
+our @ISA = qw(Plgd::Cluster);   # inherits from Cluster 
 
 use strict;
+use warnings;
+
 
 use File::Basename;
 use Plgd::Utils;
 
 
-sub detectSge () {
+sub create ($) {
+    my ($cls) = @_;
+
     if (defined($ENV{'SGE_ROOT'})) {
-        plgdInfo("Found Sun Grid Engine, which is " . $ENV{'SGE_ROOT'});
-        return "SGE";
+        my $self = {
+            name => "sge",
+            path => $ENV{'SGE_ROOT'}
+        };
+        bless $self, $cls;
+        return $self;
     } else {
         return undef;
     }
 }
 
 
-sub submitScriptSge($$$$) {
+sub submitScript($$$$$) {
 
-    my ($script, $thread, $memory, $options) = @_;
+    my ($cls, $script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
 
@@ -35,26 +39,26 @@ sub submitScriptSge($$$$) {
     $cmd = $cmd . " -o $script.log -j yes";                 # output
     $cmd = $cmd . " $options";                              # other options
     $cmd = $cmd . " $script";                               # script
-    plgdInfo("Sumbit command: $cmd");    
+    Plgd::Logger::info("Sumbit command: $cmd");    
     my $result = `$cmd`;
     my @items = split(" ", $result);
     if (scalar @items >= 3) {
         return $items[2];
     } else {
-        plgdInfo("Failed to sumbit command");
+        Plgd::Logger::info("Failed to sumbit command");
     }
 }
 
 
-sub stopScriptSge($) {
-    my ($job) = @_;
+sub stopScript($$) {
+    my ($cls, $job) = @_;
     my $cmd = "qdel $job";
-    plgdInfo("Stop script: $cmd");
+    Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
-sub checkScriptSge($$) {
-    my ($script, $jobid) = @_;
+sub checkScript($$$) {
+    my ($cls, $script, $jobid) = @_;
     my $state = "";
     open(F, "qstat |");
     while (<F>) {
@@ -77,3 +81,4 @@ sub checkScriptSge($$) {
     close(F);
     return $state;
 }
+1;
