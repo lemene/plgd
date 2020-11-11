@@ -1,6 +1,6 @@
-package Plgd::ClusterLsf;
+package Plgd::Grid::Lsf;
 
-our @ISA = qw(Plgd::Cluster);   # inherits from Cluster 
+our @ISA = qw(Plgd::Grid);   # inherits from Grid 
 
 use strict;
 use warnings;
@@ -8,17 +8,17 @@ use warnings;
 use File::Basename;
 use Plgd::Utils;
 
-sub create ($) {
+sub new ($) {
     my ($cls) = @_;
 
     my $path = `which bsub 2> /dev/null`;
     $path = trim($path);
 
     if (not $path eq "") {
-        my $self = {
-            name => "lsf",
-            path => $path
-        };
+        my $self = $cls->SUPER::new(); 
+        $self->{name} = "lsf";
+        $self->{path} = $path;
+
         bless $self, $cls;
         return $self;
     } else {

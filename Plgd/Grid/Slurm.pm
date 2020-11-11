@@ -1,7 +1,7 @@
-package Plgd::ClusterSlurm;
+package Plgd::Grid::Slurm;
 
-use Plgd::Cluster;
-our @ISA = qw(Plgd::Cluster);   # inherits from Cluster 
+use Plgd::Grid;
+our @ISA = qw(Plgd::Grid);   # inherits from Grid 
 
 use strict;
 use warnings;
@@ -9,17 +9,17 @@ use warnings;
 use File::Basename;
 use Plgd::Utils;
 
-sub create ($) {   
+sub new ($) {   
     my ($cls) = @_;
 
     my $path = `which sinfo 2> /dev/null`;
     $path = trim($path);
 
     if (not $path eq "") {
-        my $self = {
-            name => "Slurm",
-            path => $path
-        };
+        my $self = $cls->SUPER::new(); 
+        $self->{name} = "slurm";
+        $self->{path} = $path;
+
         bless $self, $cls;
         return $self;
     } else {
@@ -28,7 +28,7 @@ sub create ($) {
 }
 
 
-sub submitScript ($$$$) {
+sub submitScript ($$$$$) {
     my ($self, $script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);

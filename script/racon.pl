@@ -2,161 +2,141 @@
 
 use FindBin;
 use lib $FindBin::RealBin;
+use lib $FindBin::RealBin . "/..";
 
 use Getopt::Long;
+
 use Plgd::Utils;
+use Plgd::Logger;
+use Plgd::Config;
 use Plgd::Script;
-use Plgd::Project;
+use Plgd::Pipeline;
+use Plgd::Job;
+
+use BioUtils;
+
 use strict;
 
+package PipelineRacon;
+
+our @ISA = qw(Plgd::Pipeline);
+
+sub new {
+    my ($cls) = @_;
+    my $self = $cls->SUPER::new();
+
+    bless $self, $cls;
+    return $self;
+}
 
 
-sub loadMyConfig() {
-    #my () = @_;
+sub initialize($$) {
+    my ($self, $fname) = @_;
+
+    $self->SUPER::initialize($fname);
+    
+    my @required = ("PROJECT", "READS");
+    foreach my $r (@required) {
+        if (not exists($self->{cfg}->{$r}) or $self->{cfg}->{$r} eq "")  {
+            Plgd::Logger::error("Not set config $r");
+        }
+    }
+}
+
+package main;
+
+my @defaultConfig = (
+    ["PROJECT", ""],
+    ["READS", ""],
+    ["CONTIGS", ""],
+    ["THREADS", "4"],
+    ["CLEANUP", "0"],
+    ["GRID_NODE", "0"],
+    ["READ_BLOCK_SIZE", "4000000000"],
+    ["CONTIG_BLOCK_SIZE", "500000000"],
+    ["ITERATION_NUMBER", 1],
+    ["MINIMAP2_OPTIONS", "-x map-pb"],
+    ["RACON_OPTIOINS", ""]
+);
+
+sub defaultConfig() {
     my %cfg = ();
-    #loadConfig($fname, \%cfg);
-    $cfg{"THREADS"} = 20;
-    $cfg{"GRID_NODE"} = 6;
+    for my $i (0 .. $#defaultConfig){
+        $cfg{$defaultConfig[$i][0]} = $defaultConfig[$i][1];
+    }
     return %cfg;
 }
 
-sub loadMyEnv($) {
-    my ($cfg) = @_;
 
-    my %env = loadEnv($cfg);
-    $env{"BinPath"} = $FindBin::RealBin;
-    return %env;    
-}
+my $pipeline = PipelineRacon->new();
 
-sub jobRaconPolish($$$$$$$) {
-    my ($env, $cfg, $name, $contigs, $reads, $polished, $workDir) = @_;
-    mkdir $workDir;
-    print "---- $workDir\n";
-    my $SplitBin = "~/niefan/MECAT2/Linux-amd64/bin/fsa_rd_tools";
-    my $Minimap2Bin = "~/niefan/tool/minimap2/minimap2";
-    my $RaconBin = "~/niefan/tool/racon/build/bin/racon"; 
+sub cmdPolish($) {
+    my ($fname) = @_;
 
-    my $mapOptions = "-x map-ont";
-    my $raconOptions = " -m 8 -x -6 -g -8 -w 500";
-    my $thread = %$cfg{"THREADS"};
-
-    my $blockSize = 5000000;
-    my $blockInfo = "$workDir/block_info";
-    my $blockPrefix = "$workDir/contigs";
-    my $rd2ctgPrefix = "$workDir/rd2ctg";
- 
-    my $rd2ctg = "$workDir/rd2ctg.paf";
-
-    my $jobSplit = Job->new(
-        name => "${name}_split",
-        ifiles => [$reads],
-        ofiles => [$blockInfo],
-        mfiles => [$blockInfo],
-        cmds => ["rm -rf $workDir/$blockPrefix.*.fasta", 
-                 "$SplitBin split --ifname $contigs --ofname $blockPrefix.{}.fasta  --block_size $blockSize",
-                 "ls $blockPrefix.*.fasta > $blockInfo"],
-        msg => "spliting contigs, $name",
-    );
-
-    my $jobPolish = Job->new(
-        prefunc => sub($) {
-            my ($job) = @_;
-            my $size = `wc -l $blockInfo`;
-            for (my $i=0; $i < $size; $i=$i+1) {
-                
-                my $subContigs = "$blockPrefix.$i.fasta";
-                my $subPolished = "$blockPrefix.$i.polished.fasta";
-                my $subRd2ctg = "$rd2ctg.$i.paf";
-                my $jobSub = Job->new(
-                    name => "${name}_polish_$i",
-                    ifiles => [$subContigs, $reads],
-                    ofiles => ["$subPolished"],
-                    gfiles => ["$subPolished"],
-                    mfiles => [],
-                    cmds => ["$Minimap2Bin $mapOptions -t $thread $subContigs $reads > $subRd2ctg",
-                             "$RaconBin $raconOptions -t $thread $reads $subRd2ctg $subContigs > $subPolished"] ,
-                    msg => "polishing contigs $i, $name", 
-                );
-                push @{$job->ifiles}, $subContigs;
-                push @{$job->ofiles}, $subPolished;
-                push @{$job->pjobs}, $jobSub;
-            }
-
-        },
-        name => "cr_correct",
-        ifiles => [$blockInfo, $reads],
-        ofiles => [],                   # prefunc
-        mfiles => [],
-        pjobs => [],                    # prefunc
-        msg => "polishing reads, $name",
-    );
-
-    my $jobCat = Job->new(
-        prefunc => sub($) {
-            my ($job) = @_;
-            my $size = `wc -l $blockInfo`;
-
-            for (my $i=0; $i < $size; $i=$i+1) {
-                my $subPolished = "$blockPrefix.$i.polished.fasta";
-                push @{$job->ifiles}, $subPolished;
-            }
-
-            push @{$job->cmds}, "cat @{$job->ifiles} > $polished";
-
-
-        },
-        name => "${name}_cat",
-        ifiles => [],      # prefunc
-        ofiles => [$polished],
-        gfiles => [$polished],
-        mfiles => [],
-        cmds => [],                     # prefunc
-        msg => "cat polished contigs, $name",
-
-    );
-    
-    return Job->new(
-        name => "${name}_job",
-        ifiles => [$contigs, $reads],
-        ofiles => [$polished], # prefunc
-        mfiles => [],
-        jobs => [$jobSplit, $jobPolish, $jobCat],
-        msg => "polishing contigs at multiple nodes");
-
-}
-
-sub runRaconPolish($$$$$$) {
-    my ($env, $cfg, $count, $reads, $contigs, $workDir) = @_;
-
-    mkdir $workDir;
-
-    my $target = $contigs;
+    $pipeline->initialize($fname);
+    my $cfg = $pipeline->{cfg};
+    my $env = $pipeline->{env};
+    my $prjDir = $pipeline->get_project_folder();
+    my $count = $cfg->{"ITERATION_NUMBER"};
+    my $finalPolished = "$prjDir/polished.fasta";
+    my $contigs = $cfg->{"CONTIGS"};
+    my $reads = $cfg->{"READS"};
+    my $polished = "";
 
     for (my $i=0; $i<$count; $i=$i+1) {
-        my $polished = "$workDir/iter_$i/polished.fasta";
-        my $job = jobRaconPolish($env, $cfg, "racon_$i", $target, $reads, $polished, "$workDir/iter_$i");
-        serialRunJobs($env, $cfg, $job); 
-        $target = $polished;
+        $polished = "$prjDir/iter_$i/polished.fasta";
+        my $job = jobPolishWithMinimap2Racon($pipeline, "iter_$i", $contigs, $reads, $polished, 
+            [$cfg->{"MINIMAP2_OPTIONS"}, $cfg->{"RACON_OPTIONS"}],
+            [$cfg->{"READ_BLOCK_SIZE"}, $cfg->{"CONTIG_BLOCK_SIZE"}], "$prjDir/iter_$i");
+
+        $pipeline->run_job($job); 
+        $contigs = $polished;
     }    
+
 }
 
-my %cfg = ();
-my %env = ();
+
+sub cmdConfig($) {
+    my ($fname) = @_;
+
+    open(F, "> $fname") or die; 
+    foreach my $item (@defaultConfig) {
+        print F "$item->[0]=$item->[1]\n";
+    }
+
+    close(F);
+
+}
+
+
+sub usage() {
+    print "Usage: racon.pl config|polish cfgname\n".
+          "    polish:      polish contigs\n" .
+          "    config:      generate default config file\n" 
+}
+
 sub main() {
-    
-    %cfg = loadMyConfig();
-    %env = loadMyEnv(\%cfg);
+    if (scalar @ARGV >= 2) {
+        my $cmd = @ARGV[0];
+        my $cfgfname = @ARGV[1];
 
-    my $reads = @ARGV[0];
-    my $contigs = @ARGV[1];
-
-    runRaconPolish(\%env, \%cfg, 4, $reads, $contigs, ".");
+        if ($cmd eq "polish") {
+            cmdPolish($cfgfname);
+        } elsif ($cmd eq "config") {
+            writeConfigFile($cfgfname, \@defaultConfig);
+        } else {
+            usage();
+        }
+    } else {
+        usage();
+    }
 }
+
 
 $SIG{TERM}=$SIG{INT}=\& catchException;
 sub catchException { 
     plgdInfo("Catch an Exception, and do cleanup");
-    stopRunningScripts(\%env, \%cfg);
+    $pipeline->stop_running();
     exit -1; 
 } 
 
@@ -169,5 +149,5 @@ if ($@) {
 }
 
 END {
-    stopRunningScripts(\%env, \%cfg);
+    $pipeline->stop_running();
 }

@@ -1,18 +1,13 @@
-package Plgd::ClusterPbs;
+package Plgd::Grid::Pbs;
 
-require Exporter;
-
-@ISA    = qw(Exporter);
-@EXPORT = qw(detectPbs submitScriptPbs stopScriptPbs checkScriptPbs);
+our @ISA = qw(Plgd::Grid);   # inherits from Grid 
 
 use Cwd;
 use File::Basename;
 
 use Plgd::Utils;
 
-
-
-sub create($) {
+sub new($) {
     my ($cls) = @_;
 
     my $path = `which pbsnodes 2> /dev/null`;
@@ -34,13 +29,13 @@ sub create($) {
             }
         }
         close(F);
-    
-        my $self = {
-            name => "Slurm",
-            path => $path,
-            version => $version,
-            isPro => $isPro,
-        };
+        
+        my $self = $cls->SUPER::new(); 
+        $self->{name} = "slurm";
+        $self->{path} = $path;
+        $self->{version} = $version;
+        $self->{isPro} = $isPro;
+
         bless $self, $cls;
         return $self;
 

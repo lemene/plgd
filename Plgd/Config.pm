@@ -4,6 +4,34 @@ use strict;
 use warnings;
 
 
+sub new {
+    my ($cls, $default) = @_;
+
+    my $self = {
+        default =>  $default,
+        cfg => {},
+    };
+
+    bless $self, $cls;
+    return $self;
+}
+
+
+# sub load_default($$) {
+#     my ($self, $default) = @_;
+#     my %cfg = ();
+#     for my $i (0 .. @$default){
+#         $cfg{@$default[$i][0]} = @$default[$i][1];
+#     }
+#     return %cfg;
+# }
+
+sub load($$) {
+    my ($self, $fname);
+
+    $self->{cfg} = loadConfig($fname);
+}
+
 sub trim { 
     my $s = shift; 
     $s =~ s/^\s+|\s+$//g; 

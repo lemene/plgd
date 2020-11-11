@@ -11,10 +11,14 @@ use Class::Struct;
 use Plgd::Config;
 use Plgd::Utils;
 use Plgd::Script;
-use Plgd::Cluster;
+use Plgd::Grid;
+
+# short module name
+use constant Logger => 'Plgd::Logger';
 
 struct Job => {
     prefunc => '$',
+    postfunc => '$',
     name => '$',
     ifiles => '@',
     ofiles => '@',
@@ -27,9 +31,8 @@ struct Job => {
     msg => '$',
 };
 
-my $WAITING_FILE_TIME = 60;
+my $WAITING_FILE_TIME = 3;
 
-our %running = ();
 
 sub new {
     my ($cls) = @_;
@@ -52,15 +55,24 @@ sub initialize($$) {
     $self->{env} = {};
     $self->{env}->{"WorkPath"} = getcwd();
     $self->{env}->{"BinPath"} = $FindBin::RealBin;
-    $self->{env}->{"running"} = ();
-    $self->{runner} = Plgd::Cluster->create($self->get_config("CLUSTER"));
+    $self->{running} = {};
+    $self->{grid} = Plgd::Grid->create($self->get_config("grid"));
 
     # create project folders
-    mkdir $self->{cfg}->{"PROJECT"};
-    mkdir $self->{cfg}->{"PROJECT"} . "/scripts";
+    mkdir $self->get_project_folder();
+    mkdir $self->get_script_folder();
 
 }
 
+sub get_env($$) {
+    my ($self, $name) = @_;
+    
+    if (exists($self->{env}->{$name})) {
+        return $self->{env}->{$name};
+    } else {
+        Plgd::Logger::error("Not recognizes the environment variable: $name");
+    }
+}
 
 sub get_config($$) {
     my ($self, $name) = @_;
@@ -70,10 +82,37 @@ sub get_config($$) {
     } elsif (exists($self->{defcfg}->{$name})) {
         return $self->{defcfg}->{$name};
     } else {
-    printf("ccz ccc\n");
         #Plgd::Logger::warn("Not recognizes the config: $name");
         return "";
     }
+}
+
+sub get_script_fname($$) {
+    my ($self, $name) = @_;
+    return $self->get_script_folder() . "/$name.sh";
+}
+
+sub get_script_folder($) {
+    my ($self) = @_;
+    return $self->get_project_folder() . "/scripts";
+}
+
+sub get_project_folder($) {
+    my ($self) = @_;
+    my $env = $self->{env};
+    my $cfg = $self->{cfg};
+    
+    return $env->{"WorkPath"} ."/". $cfg->{"PROJECT"};
+}
+
+sub newjob($$) {
+    my ($self, %params) = @_;
+    return Plgd::Job->create($self, %params);
+}
+
+sub run_job($$) {
+    my ($self, $job) = @_;
+    $job->run();
 }
 
 sub serialRunJobs {
@@ -91,11 +130,14 @@ sub runJob ($$) {
     my $env = $self->{env};
     my $cfg = $self->{cfg};
 
+    if ($job->prefunc) {
+        print($job->prefunc);
+        print("jjj $job->name jjj\n");
+    }
     $job->prefunc->($job) if ($job->prefunc);
     
-    my $prjDir = %$env{"WorkPath"} ."/". %$cfg{"PROJECT"};
-   
-    my $script = "$prjDir/scripts/" . $job->name. ".sh";
+    my $prjDir = $self->get_project_folder();
+    my $script = $self->get_script_fname($job->name);
 
     requireFiles(@{$job->ifiles});
     if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
@@ -105,8 +147,8 @@ sub runJob ($$) {
         Plgd::Logger::info("Start " . $job->msg . ".") if ($job->msg);
 
         if (scalar @{$job->cmds} > 0) {
-            writeScript($script, $self->scriptEnv($env, $cfg), @{$job->cmds});
-            $self->runScript($script);
+            writeScript($script, $self->scriptEnv(), @{$job->cmds});
+            $self->run_scripts($script);
         } elsif (scalar @{$job->funcs} > 0) {
             foreach my $f (@{$job->funcs}) {
                 $f->($env, $cfg);
@@ -121,7 +163,7 @@ sub runJob ($$) {
             $self->parallelRunJobs(@{$job->pjobs});
             echoFile("$script.done", "0");
         } else {
-            pldgWarn("It is an empty job");
+            Plgd::Logger::warn("It is an empty job");
             # die "never come here"
         }
 
@@ -155,7 +197,7 @@ sub parallelRunJobs {
             Plgd::Logger::error("Only cmds can run parallel.");
         }
 
-        my $script = "$prjDir/scripts/" . $job->name . ".sh";
+        my $script = $self->get_script_fname($job->name);
         
         requireFiles(@{$job->ifiles});
         if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
@@ -175,7 +217,7 @@ sub parallelRunJobs {
             Plgd::Logger::info("Parallelly start " . $job->msg . ".") if ($job->msg);
         }
 
-        $self->runScripts(\@scripts);
+        $self->run_scripts(@scripts);
 
         foreach my $job (@running) {
 
@@ -197,106 +239,37 @@ sub scriptEnv($) {
 
     my $env = $self->{env};
     my $cfg = $self->{cfg};
+    if (exists($cfg->{BIN_PATH})) {
+        return "export PATH=$cfg->{BIN_PATH}:\$PATH\n";
+    } else {
+        return "";
+    }
 
-    my $binPath = %$cfg{"BIN_PATH"};
-
-    return "export PATH=$binPath:\$PATH\n";
 }
 
 
-
-sub runScript($$) {
-    my ($self, $script) = @_;
-    $self->myrunScripts($script);
-}
-
-
-sub runScripts($$) {
-    my ($self, $scripts) = @_;
-    
-    $self->myrunScripts(@$scripts);
-}
-
-sub myrunScripts {
+sub run_scripts {
     my ($self, @scripts) = @_;
-    
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
         
-    $self->runScriptsGrid(\@scripts);
+    my $threads = $self->get_config("THREADS") + 0;
+    my $memroy = $self->get_config("MEMORY") + 0;
+    my $options = $self->get_config("GRID_OPTIONS");
+    $self->{grid}->run_scripts($threads, $memroy, $options, \@scripts);
+    #$self->runScriptsGrid(\@scripts);
 }
 
-
-sub waitScriptsGrid($$$) {
-    my ($self, $running, $part) = @_;
-
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
-
-    my @scripts = keys %$running;
-    
-    my @finished = ();
-    until (@finished ~~ @scripts) {
-        @finished = ();
-        foreach my $s (@scripts) {
-            my $jobid = $running{$s};
-            my $state = $self->{runner}->checkScript($s, $jobid);
-            if ($state eq "" or $state eq "C") {
-                if (waitScript($s, 60, 5, 1)) {
-                    push @finished, $s
-                } else {
-                    Plgd::Logger::error("Failed to get script result, id=$jobid, $s")
-                }
-            } else {
-                sleep(5);
-            }
-        }
-        last if ($part and @finished > 0);        
-    }
-    return @finished;
-}
-
-sub runScriptsGrid($$) {
-    my ($self, $scripts) = @_;
-
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
-    
-    my $node = %$cfg{"GRID_NODE"};
-
-    foreach my $s (@$scripts) {
-        Plgd::Logger::info("Run script $s");
-        my $r = $self->{runner}->submitScript($s, %$cfg{"THREADS"}, %$cfg{"MEMORY"}, %$cfg{"GRID_OPTIONS"});
-        Plgd::Logger::error("Failed to submit script $s") if (not $r);
-
-        $running{$s} = $r;
-        my $rsize = keys %running;
-	    if ($node > 0 and (keys %running) >= $node) {
-            my @finished = $self->waitScriptsGrid(\%running, 1);
-	        foreach my $i (@finished) {
-                delete $running{$i};
-            }
-            checkScripts(@finished);
-        }
-        
-    }
-    my @finished = $self->waitScriptsGrid(\%running, 0);
-    foreach my $i (@finished) {
-        delete $running{$i};
-    }
-    checkScripts(@finished);
-    
-    
-}
-
-sub stopRunningScripts($) {
+sub stop_running($) {
     my ($self) = @_;
 
-    foreach my $i (keys %running) {
-        $self->{running}->stopScript($running{$i});
-        delete $running{$i};
+    if (exists($self->{grid})) {
+        $self->{grid}->stop_all();
     }
+
 }
+
+sub help($) {
+
+} 
 
 1;
 

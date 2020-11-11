@@ -1,6 +1,6 @@
-package Plgd::ClusterSge;
+package Plgd::Grid::Sge;
 
-our @ISA = qw(Plgd::Cluster);   # inherits from Cluster 
+our @ISA = qw(Plgd::Grid);   # inherits from Grid 
 
 use strict;
 use warnings;
@@ -10,14 +10,13 @@ use File::Basename;
 use Plgd::Utils;
 
 
-sub create ($) {
+sub new ($) {
     my ($cls) = @_;
 
     if (defined($ENV{'SGE_ROOT'})) {
-        my $self = {
-            name => "sge",
-            path => $ENV{'SGE_ROOT'}
-        };
+        my $self = $cls->SUPER::new(); 
+        $self->{name} = "sge";
+        $self->{path} = $ENV{'SGE_ROOT'};
         bless $self, $cls;
         return $self;
     } else {
