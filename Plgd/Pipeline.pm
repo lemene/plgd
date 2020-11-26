@@ -35,10 +35,10 @@ my $WAITING_FILE_TIME = 3;
 
 
 sub new {
-    my ($cls) = @_;
+    my ($cls, $defcfg) = @_;
 
     my $self = {
-
+        $cfg = Plgd::Config->new($defcfg),
     };
 
     bless $self, $cls;
@@ -50,7 +50,7 @@ sub initialize($$) {
     my ($self, $fname) = @_;
 
     
-    $self->{cfg} = Plgd::Config::loadConfig($fname);
+    #$self->{cfg} = Plgd::Config::loadConfig($fname);
 
     $self->{env} = {};
     $self->{env}->{"WorkPath"} = getcwd();
@@ -76,15 +76,13 @@ sub get_env($$) {
 
 sub get_config($$) {
     my ($self, $name) = @_;
+    return $self->{cfg}->get($name);
 
-    if (exists($self->{cfg}->{$name})) {
-        return $self->{cfg}->{$name};
-    } elsif (exists($self->{defcfg}->{$name})) {
-        return $self->{defcfg}->{$name};
-    } else {
-        #Plgd::Logger::warn("Not recognizes the config: $name");
-        return "";
-    }
+}
+
+sub get_config2($$$) {
+    my ($self, $name0, $name1) = @_;
+    return $self->{cfg}->get2($name0, $name1);
 }
 
 sub get_script_fname($$) {
@@ -99,10 +97,8 @@ sub get_script_folder($) {
 
 sub get_project_folder($) {
     my ($self) = @_;
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
     
-    return $env->{"WorkPath"} ."/". $cfg->{"PROJECT"};
+    return $self->get_env("WorkPath") ."/". $$self->get_config("PROJECT");
 }
 
 sub newjob($$) {
@@ -126,14 +122,7 @@ sub serialRunJobs {
 
 sub runJob ($$) {
     my ($self, $job) = @_;
-    
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
 
-    if ($job->prefunc) {
-        print($job->prefunc);
-        print("jjj $job->name jjj\n");
-    }
     $job->prefunc->($job) if ($job->prefunc);
     
     my $prjDir = $self->get_project_folder();
@@ -151,7 +140,8 @@ sub runJob ($$) {
             $self->run_scripts($script);
         } elsif (scalar @{$job->funcs} > 0) {
             foreach my $f (@{$job->funcs}) {
-                $f->($env, $cfg);
+               # $f->($env, $cfg);
+               # TODO
             }
             echoFile("$script.done", "0");
         } elsif (scalar @{$job->jobs} > 0) {
@@ -168,7 +158,7 @@ sub runJob ($$) {
         }
 
         waitRequiredFiles($WAITING_FILE_TIME, @{$job->ofiles});
-        if (%$cfg{"CLEANUP"} == 1) {
+        if ($self->get_config("CLEANUP") == 1) {
             deleteFiles(@{$job->mfiles});
         }
 
@@ -183,10 +173,8 @@ sub runJob ($$) {
 sub parallelRunJobs {
     my ($self, @jobs) = @_;
     
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
 
-    my $prjDir = %$env{"WorkPath"} ."/". %$cfg{"PROJECT"};
+    my $prjDir = $self->get_project_folder();
 
     # check which job should be run
     my @running = ();
@@ -223,7 +211,7 @@ sub parallelRunJobs {
 
             waitRequiredFiles($WAITING_FILE_TIME, @{$job->ofiles});
             
-            if (%$cfg{"CLEANUP"} == 1) {
+            if ($self->get_config("CLEANUP") == 1) {
                 deleteFiles(@{$job->mfiles});
             }
 
@@ -237,13 +225,7 @@ sub parallelRunJobs {
 sub scriptEnv($) {
     my ($self) = @_;
 
-    my $env = $self->{env};
-    my $cfg = $self->{cfg};
-    if (exists($cfg->{BIN_PATH})) {
-        return "export PATH=$cfg->{BIN_PATH}:\$PATH\n";
-    } else {
-        return "";
-    }
+    return "";
 
 }
 

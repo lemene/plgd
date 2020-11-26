@@ -32,6 +32,31 @@ sub load($$) {
     $self->{cfg} = loadConfig($fname);
 }
 
+sub get($$) {
+    my ($self, $name) = @_;
+    
+    if (exists($self->{cfg}->{$name})) {
+        return $self->{cfg}->{$name};
+    } elsif (exists($self->{defcfg}->{$name})) {
+        return $self->{defcfg}->{$name};
+    } else {
+        #Plgd::Logger::warn("Not recognizes the config: $name");
+        return "";
+    }
+}
+sub get2($$$) {
+    my ($self, $name0, $name1) = @_;
+    
+    if (exists($self->{cfg}->{$name0})) {
+        return $self->{cfg}->{$name0};
+    } elsif (exists($self->{cfg}->{$name1})) {
+        return $self->{cfg}->{$name1};
+    } else {
+        #Plgd::Logger::warn("Not recognizes the config: $name");
+        return "";
+    }
+}
+
 sub trim { 
     my $s = shift; 
     $s =~ s/^\s+|\s+$//g; 
