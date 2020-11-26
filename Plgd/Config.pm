@@ -4,37 +4,65 @@ use strict;
 use warnings;
 
 
+sub _init_defcfg($) {
+    my ($default) = @_;
+    my %cfg = ();
+
+    for my $i (0 .. $#{$default}){
+        $cfg{$default->[$i][0]} = $default->[$i][1];
+    }
+    return \%cfg;
+}
+
+# default format is (name, value, required, desc)
 sub new {
     my ($cls, $default) = @_;
-
     my $self = {
-        default =>  $default,
+        default => $default,
         cfg => {},
+        defcfg => _init_defcfg($default)
     };
-
     bless $self, $cls;
     return $self;
 }
 
-
-# sub load_default($$) {
-#     my ($self, $default) = @_;
-#     my %cfg = ();
-#     for my $i (0 .. @$default){
-#         $cfg{@$default[$i][0]} = @$default[$i][1];
-#     }
-#     return %cfg;
-# }
-
 sub load($$) {
-    my ($self, $fname);
+    my ($self, $fname) = @_;
 
-    $self->{cfg} = loadConfig($fname);
+    open(F, "<$fname") or die "cann't open file: $fname, $!";
+    while(<F>) {
+        my $line = Plgd::Utils::trim($_);
+        if ($line ne "" and not $line =~ m/^#/) {
+            my @items  = split("=", $line, 2);
+            if (scalar @items == 2) {
+                $self->{cfg}->{Plgd::Utils::trim($items[0])} = Plgd::Utils::trim($items[1]);
+            } else {
+                Plgd::Logger::error("Unrecogined Config line: $line");
+            }
+        }
+    }
+    close(F);
+
+    $self->check($self->{cfg});
+
+}
+
+sub check($$) {
+    my ($self, $cfg) = @_;
+
+    # check required
+    for my $i (@{$self->{default}}) {
+        if ($i->[2]) {
+            if (not exists($cfg->{$i->[0]}) or $cfg->{$i->[0]} eq "") {
+                Plgd::Logger::error("Not set config $i->[0]");
+            }
+        }
+    }
 }
 
 sub get($$) {
     my ($self, $name) = @_;
-    
+
     if (exists($self->{cfg}->{$name})) {
         return $self->{cfg}->{$name};
     } elsif (exists($self->{defcfg}->{$name})) {
@@ -56,28 +84,6 @@ sub get2($$$) {
         return "";
     }
 }
-
-sub trim { 
-    my $s = shift; 
-    $s =~ s/^\s+|\s+$//g; 
-    return $s 
-}
-
-
-sub loadConfig($) {
-    my ($fname) = @_;
-    my %cfg = ();
-
-    open(F, "<$fname") or die "cann't open file: $fname, $!";
-    while(<F>) {
-        my @items  = split("=", $_, 2);
-        $items[1] =~s/^\s*"|"\s*$//g;
-        $cfg{$items[0]} = trim($items[1]);
-    }
-
-    return \%cfg;
-}
-
 
 sub switchRunningConfig($$) {
     my ($cfg, $prefix) = @_;

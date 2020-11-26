@@ -38,7 +38,7 @@ sub new {
     my ($cls, $defcfg) = @_;
 
     my $self = {
-        $cfg = Plgd::Config->new($defcfg),
+        cfg => Plgd::Config->new($defcfg),
     };
 
     bless $self, $cls;
@@ -49,8 +49,7 @@ sub new {
 sub initialize($$) {
     my ($self, $fname) = @_;
 
-    
-    #$self->{cfg} = Plgd::Config::loadConfig($fname);
+    $self->{cfg}->load($fname);
 
     $self->{env} = {};
     $self->{env}->{"WorkPath"} = getcwd();
@@ -98,7 +97,7 @@ sub get_script_folder($) {
 sub get_project_folder($) {
     my ($self) = @_;
     
-    return $self->get_env("WorkPath") ."/". $$self->get_config("PROJECT");
+    return $self->get_env("WorkPath") ."/". $self->get_config("PROJECT");
 }
 
 sub newjob($$) {
@@ -191,7 +190,7 @@ sub parallelRunJobs {
         if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
             unlink @{$job->ofiles};
 
-            writeScript($script, scriptEnv($env, $cfg), @{$job->cmds});
+            writeScript($script, $self->scriptEnv(), @{$job->cmds});
             push @scripts, $script;
             push @running, $job;
         } else {
