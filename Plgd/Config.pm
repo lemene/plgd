@@ -9,7 +9,7 @@ sub _init_defcfg($) {
     my %cfg = ();
 
     for my $i (0 .. $#{$default}){
-        $cfg{$default->[$i][0]} = $default->[$i][1];
+        $cfg{lc($default->[$i][0])} = $default->[$i][1];
     }
     return \%cfg;
 }
@@ -35,7 +35,9 @@ sub load($$) {
         if ($line ne "" and not $line =~ m/^#/) {
             my @items  = split("=", $line, 2);
             if (scalar @items == 2) {
-                $self->{cfg}->{Plgd::Utils::trim($items[0])} = Plgd::Utils::trim($items[1]);
+                my $n = lc(Plgd::Utils::trim($items[0]));
+                my $v = Plgd::Utils::trim($items[1]);
+                $self->{cfg}->{$n} = $v;
             } else {
                 Plgd::Logger::error("Unrecogined Config line: $line");
             }
@@ -53,7 +55,8 @@ sub check($$) {
     # check required
     for my $i (@{$self->{default}}) {
         if ($i->[2]) {
-            if (not exists($cfg->{$i->[0]}) or $cfg->{$i->[0]} eq "") {
+            my $n = lc($i->[0]);
+            if (not exists($cfg->{$n}) or $cfg->{$n} eq "") {
                 Plgd::Logger::error("Not set config $i->[0]");
             }
         }
@@ -62,6 +65,8 @@ sub check($$) {
 
 sub get($$) {
     my ($self, $name) = @_;
+
+    $name = lc($name);
 
     if (exists($self->{cfg}->{$name})) {
         return $self->{cfg}->{$name};
@@ -74,6 +79,8 @@ sub get($$) {
 }
 sub get2($$$) {
     my ($self, $name0, $name1) = @_;
+    $name0 = lc($name0);
+    $name1 = lc($name1);
     
     if (exists($self->{cfg}->{$name0})) {
         return $self->{cfg}->{$name0};
