@@ -18,11 +18,8 @@ sub run_core() {
     my ($self) = @_;
     Plgd::Logger::info("Job::Parallel::run_core $self->{name}");
 
-    foreach my $j (@{$self->{pjobs}}) {
-        
-        print("jjj $j->{name} jjj\n");
-        $j->run();
-    }
+    $self->{pl}->parallelRunJobs(@{$self->{pjobs}});
+    Plgd::Utils::echoFile($self->get_done_fname(), "0");
 }
 
 1;

@@ -110,6 +110,7 @@ sub run_job($$) {
     $job->run();
 }
 
+
 sub serialRunJobs {
     my ($self, @jobs) = @_;
 
@@ -118,54 +119,9 @@ sub serialRunJobs {
     }
 }
 
-
 sub runJob ($$) {
     my ($self, $job) = @_;
-
-    $job->prefunc->($job) if ($job->prefunc);
-    
-    my $prjDir = $self->get_project_folder();
-    my $script = $self->get_script_fname($job->name);
-
-    requireFiles(@{$job->ifiles});
-    if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
-        deleteFiles(@{$job->gfiles}) if ($job->gfiles); 
-        deleteFiles("$script.done"); 
-
-        Plgd::Logger::info("Start " . $job->msg . ".") if ($job->msg);
-
-        if (scalar @{$job->cmds} > 0) {
-            writeScript($script, $self->scriptEnv(), @{$job->cmds});
-            $self->run_scripts($script);
-        } elsif (scalar @{$job->funcs} > 0) {
-            foreach my $f (@{$job->funcs}) {
-               # $f->($env, $cfg);
-               # TODO
-            }
-            echoFile("$script.done", "0");
-        } elsif (scalar @{$job->jobs} > 0) {
-            foreach my $j (@{$job->jobs}) {
-                $self->runJob($j);
-            }
-            echoFile("$script.done", "0");
-        } elsif (scalar @{$job->pjobs} > 0) {
-            $self->parallelRunJobs(@{$job->pjobs});
-            echoFile("$script.done", "0");
-        } else {
-            Plgd::Logger::warn("It is an empty job");
-            # die "never come here"
-        }
-
-        waitRequiredFiles($WAITING_FILE_TIME, @{$job->ofiles});
-        if ($self->get_config("CLEANUP") == 1) {
-            deleteFiles(@{$job->mfiles});
-        }
-
-        Plgd::Logger::info("End " .$job->msg . ".") if ($job->msg);
-    } else {
-        Plgd::Logger::info("Skip ". $job->msg . " for outputs are newer.") if ($job->msg);
-    
-    }
+    $job->run();
 }
 
 
@@ -180,17 +136,17 @@ sub parallelRunJobs {
     my @scripts = ();
     foreach my $job (@jobs) {
         
-        if (scalar @{$job->funcs} > 0 || scalar @{$job->jobs} > 0) {
-            Plgd::Logger::error("Only cmds can run parallel.");
-        }
+        #if (scalar @{$job->{funcs}} > 0 || scalar @{$job->{jobs}} > 0) {
+        #    Plgd::Logger::error("Only cmds can run parallel.");
+        #}
 
-        my $script = $self->get_script_fname($job->name);
+        my $script = $self->get_script_fname($job->{name});
         
-        requireFiles(@{$job->ifiles});
-        if (filesNewer($job->ifiles, $job->ofiles) or not isScriptSucc($script)) {
-            unlink @{$job->ofiles};
+        require_files(@{$job->{ifiles}});
+        if (filesNewer($job->{ifiles}, $job->{ofiles}) or not isScriptSucc($script)) {
+            unlink @{$job->{ofiles}};
 
-            writeScript($script, $self->scriptEnv(), @{$job->cmds});
+            writeScript($script, $self->scriptEnv(), @{$job->{cmds}});
             push @scripts, $script;
             push @running, $job;
         } else {
@@ -201,20 +157,20 @@ sub parallelRunJobs {
     
     if (scalar @scripts > 0) {
         foreach my $job (@running) {
-            Plgd::Logger::info("Parallelly start " . $job->msg . ".") if ($job->msg);
+            Plgd::Logger::info("Parallelly start " . $job->{msg} . ".") if ($job->{msg});
         }
 
         $self->run_scripts(@scripts);
 
         foreach my $job (@running) {
 
-            waitRequiredFiles($WAITING_FILE_TIME, @{$job->ofiles});
+            waitRequiredFiles($WAITING_FILE_TIME, @{$job->{ofiles}});
             
             if ($self->get_config("CLEANUP") == 1) {
-                deleteFiles(@{$job->mfiles});
+                deleteFiles(@{$job->{mfiles}});
             }
 
-            Plgd::Logger::info("End " .$job->msg. ".") if ($job->msg);
+            Plgd::Logger::info("End " .$job->{msg}. ".") if ($job->{msg});
         }
     }
 

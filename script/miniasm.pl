@@ -53,7 +53,7 @@ sub loadMiniasmConfig($) {
     my @required = ("PROJECT", "GENOME_SIZE", "READS");
     foreach my $r (@required) {
         if (not exists($cfg{$r}) or $cfg{$r} eq "")  {
-            plgdError("Not set config $r");
+            Plgd::Logger::error("Not set config $r");
         }
     }
     return %cfg;
@@ -170,7 +170,7 @@ sub main() {
 
 $SIG{TERM}=$SIG{INT}=\& catchException;
 sub catchException { 
-    plgdInfo("Catch an Exception, and do cleanup");
+    Plgd::Logger::info("Catch an Exception, and do cleanup");
     stopRunningScripts(\%env, \%cfg);
     exit -1; 
 } 

@@ -14,15 +14,25 @@ my $WAITING_FILE_TIME = 3;
 sub create($$$) {
     my ($cls, $pl, %params) = @_;
 
-    if (exists $params{cmds} and scalar $params{cmds} > 0) {      # 
+        my $name = $params{name};
+        my $n = exists $params{pjobs};
+        printf("$name create job $n \n");
+
+    if (exists $params{cmds}) {      # 
+        printf("script job $name\n");
         return Plgd::Job::Script->new($pl, %params);
-    } elsif (scalar $params{jobs}) {
+    } elsif (exists $params{jobs}) {
+        printf("serial job $name\n");
         return Plgd::Job::Serial->new($pl, %params);
-    } elsif (scalar $params{pjobs}) {
+#    } elsif (exists $params{pjobs} and scalar @{$params{pjobs}} > 0) {
+    } elsif (exists $params{pjobs}) {
+        printf("Parallel job $name\n");
         return Plgd::Job::Parallel->new($pl, %params);
-    } elsif (scalar $params{funcs}) {
+    } elsif (exists $params{funcs}) {
+        printf("Function job $name\n");
         return Plgd::Job::Function->new($pl, %params);
     } else {
+        printf("undef job $name\n");
         return undef;
     }
 }
@@ -47,6 +57,11 @@ sub new() {
     return $self;
 }
 
+
+sub get_name($) {
+    my ($self) = @_;
+    return $self->{name};
+}
 sub get_script_fname($) {
     my ($self) = @_;
 
@@ -65,17 +80,18 @@ sub is_succ_done($) {
     return Plgd::Utils::filesNewer($self->{ofiles}, $self->{ifiles}) and Plgd::Script::isScriptSucc($script);
 }
 
-sub preprocess($) {
+sub preprocess($$) {
     my ($self) = @_;
+
 
     Plgd::Logger::info("Start running job $self->{name}, $self->{msg}");
     $self->{prefunc}->($self) if ($self->{prefunc});
     
     my $script = $self->get_script_fname();
-    Plgd::Utils::requireFiles(@{$self->{ifiles}});
+    Plgd::Utils::require_files(@{$self->{ifiles}});
     if (not $self->is_succ_done()) {
-        Plgd::Utils::deleteFiles(@{$self->{gfiles}}) if ($self->{gfiles}); 
-        Plgd::Utils::deleteFiles($self->get_done_fname()); 
+        #Plgd::Utils::deleteFiles(@{$self->{gfiles}}) if ($self->{gfiles}); 
+        #Plgd::Utils::deleteFiles($self->get_done_fname()); 
 
         #Plgd::Logger::info("Start " . $self->{msg} . ".") if ($self->{msg});
         return 0;
@@ -90,7 +106,7 @@ sub postprocess($$) {
 
         Plgd::Utils::waitRequiredFiles($WAITING_FILE_TIME, @{$self->{ofiles}});
         
-        Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
+        #Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
         
         Plgd::Logger::info("End " .$self->{msg} . ".") if ($self->{msg});
     } else {

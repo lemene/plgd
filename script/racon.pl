@@ -135,7 +135,7 @@ sub main() {
 
 $SIG{TERM}=$SIG{INT}=\& catchException;
 sub catchException { 
-    plgdInfo("Catch an Exception, and do cleanup");
+    Plgd::Logger::info("Catch an Exception, and do cleanup");
     $pipeline->stop_running();
     exit -1; 
 } 

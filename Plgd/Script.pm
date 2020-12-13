@@ -19,7 +19,7 @@ sub isScriptDone($) {
 sub writeScript {
     my ($fname, $env, @cmds) = @_;
     
-    plgdDebug("Write Script, $fname");
+    Plgd::Logger::debug("Write Script, $fname");
     #if (! -e $fname) {
     {
         open(F, "> $fname") or die;
@@ -42,7 +42,7 @@ sub writeScript {
 sub writeScripts($$$) {
     my ($pattern, $env, $cmds) = @_;
     
-    plgdDebug("Write Scripts. The pattern is $pattern");
+    Plgd::Logger::debug("Write Scripts. The pattern is $pattern");
 
     my $size = scalar @$cmds;
     my @fnames = ();
@@ -86,7 +86,7 @@ sub waitScript($$$$) {
         }
 
         if (not $silent) {
-            plgdInfo("Wait script fininshed $script");
+            Plgd::Logger::info("Wait script fininshed $script");
         }
         sleep($interval);
     }
@@ -106,7 +106,7 @@ sub waitScripts($$$) {
             if (not isScriptDone($s)) {
 
                 if (not $silent) {
-                    plgdInfo("Wait script fininshed $s");
+                    Plgd::Logger::info("Wait script fininshed $s");
                 }
                 $done = 0;
                 last;
@@ -127,7 +127,7 @@ sub waitCheckScript($$$) {
     if (waitScript($script, $waitTime, 10, $silent)) {
         checkScripts($script);
     } else {
-        plgdError("Failed to wait script $script");
+        Plgd::Logger::error("Failed to wait script $script");
     }
 }
 
@@ -135,7 +135,7 @@ sub checkScripts {
     foreach my $script (@_) {
         my $retCode = getScriptReturn($script);
         if ($retCode != 0) {
-            plgdError("Failed to run script, $retCode, $script");
+            Plgd::Logger::error("Failed to run script, $retCode, $script");
         } 
     }
 }
@@ -143,7 +143,7 @@ sub checkScripts {
 
 sub runScriptLocal($) {
     my ($script) = @_;
-    plgdInfo("Run script: $script 2>&1 |tee $script.log");
+    Plgd::Logger::info("Run script: $script 2>&1 |tee $script.log");
     my $r = system($script . " 2>&1 | tee $script.log");
     if ($r != 0) {
         `echo $r > $script.done`; # 

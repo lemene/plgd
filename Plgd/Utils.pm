@@ -3,7 +3,7 @@ package Plgd::Utils;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT = qw(linesInFile filesNewer trim echoFile requireFiles waitRequiredFiles mergeOptionString plgdLogLevel plgdDebug plgdInfo plgdWarn plgdError getFileFirstItem wrapCmdWithPreCheck deleteFiles);
+@EXPORT = qw(linesInFile filesNewer trim echoFile require_files waitRequiredFiles mergeOptionString plgdLogLevel wrapCmdWithPreCheck deleteFiles);
 
 use File::Path;
 use strict; 
@@ -116,21 +116,6 @@ sub mergeOptionString($$) {
 }
 
 
-sub getFileFirstItem($$) {
-    my ($file, $line) = @_;
-    my $i = 0;
-    open(F, "< $file") or die; 
-    while(<F>) {
-        if ($i == $line) {
-           my @items = split(" ", $_);
-           close(F);
-           return $items[0];
-        }
-        $i = $i + 1;
-    }
-    close(F);
-    die;
-}
 
 
 sub waitRequiredFiles {
@@ -155,7 +140,7 @@ sub waitRequiredFiles {
             if (time() - $startTime <= $waitingTime) {
                 sleep($sleepTime);
             } else {
-                plgdError("File is not exist: $notExist");
+                Plgd::Logger::error("File is not exist: $notExist");
             }
         } else {
             last;
@@ -164,29 +149,11 @@ sub waitRequiredFiles {
 }
 
 
-sub requireFiles {
+sub require_files {
     foreach my $f (@_) {
-        plgdDebug("Require file, $f");
+        Plgd::Logger::debug("Require file, $f");
         if (not -e $f) {
-            plgdError("File is not exist: $f");
+            Plgd::Logger::error("File is not exist: $f");
         }
     }
 }
-
-
-sub plgdDebug($) {
-    Plgd::Logger::debug(@_[0]);
-}
-
-sub plgdInfo($) {
-    Plgd::Logger::info(@_[0]);
-}
-
-sub plgdWarn($) {
-    Plgd::Logger::warn(@_[0]);
-}
-
-sub plgdError($) {
-    Plgd::Logger::error(@_[0]);
-}
- 

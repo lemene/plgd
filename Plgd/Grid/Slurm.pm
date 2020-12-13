@@ -40,21 +40,21 @@ sub submitScript ($$$$$) {
     $cmd = $cmd . " -o $script.log";                                        # output
     $cmd = $cmd . " $options";                                              # other options
     $cmd = $cmd . " $script";                                               # script
-    plgdInfo("Sumbit command: $cmd");    
+    Plgd::Logger::info("Sumbit command: $cmd");    
     my $result = `$cmd`;
 
     my @items = split(" ", $result);
     if (scalar @items >= 4) {
         return $items[3];
     } else {
-        plgdInfo("Failed to sumbit command");
+        Plgd::Logger::info("Failed to sumbit command");
     }
 }
 
 sub stopScript($) {
     my ($self, $job) = @_;
     my $cmd = "scancel $job";
-    plgdInfo("Stop script: $cmd");
+    Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
