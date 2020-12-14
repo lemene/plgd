@@ -92,7 +92,7 @@ sub runAssemble($$$$$$) {
         msg => "assembling, $name",
     );
 
-    serialRunJobs($env, $cfg, $job);
+    run_jobs($env, $cfg, $job);
 
 }
 
@@ -108,7 +108,7 @@ sub runPolish($$$$$$$) {
         my $job = jobPolishWithMinimap2Racon($env, $cfg, "${name}_$i", $contigs, $reads, $polished, 
             [$cfg->{"PLSH_MINIMAP2_OPTIONS"}, $cfg->{"PLSH_RACON_OPTIONS"}],
             [$cfg->{"PLSH_READ_BLOCK_SIZE"}, $cfg->{"PLSH_CONTIG_BLOCK_SIZE"}], "$workDir/iter_$i");
-        serialRunJobs($env, $cfg, $job); 
+        run_jobs($env, $cfg, $job); 
         $contigs = $polished;
     }    
 }

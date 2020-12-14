@@ -28,7 +28,7 @@ sub new ($) {
 }
 
 
-sub submitScript ($$$$$) {
+sub submit_script ($$$$$) {
     my ($self, $script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);
@@ -51,14 +51,14 @@ sub submitScript ($$$$$) {
     }
 }
 
-sub stopScript($) {
+sub stop_script($) {
     my ($self, $job) = @_;
     my $cmd = "scancel $job";
     Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
-sub checkScript($$$) {
+sub check_script($$$) {
     my ($self, $script, $jobid) = @_;
     my $state = "";
     open(F, "squeue |");

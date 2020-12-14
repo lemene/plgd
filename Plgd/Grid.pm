@@ -57,10 +57,6 @@ sub create($$) {
 }
 
 
-sub submit() {
-
-}
-
 sub run_scripts {
     my ($self, $threads, $memory, $options, $scripts) = @_;
 
@@ -70,7 +66,7 @@ sub run_scripts {
 
     foreach my $s (@$scripts) {
         Plgd::Logger::info("Run script $s");
-        my $r = $self->submitScript($s, $threads, $memory, $options);
+        my $r = $self->submit_script($s, $threads, $memory, $options);
         Plgd::Logger::error("Failed to submit script $s") if (not $r);
         
         $running->{$s} = $r;
@@ -105,7 +101,7 @@ sub wait_running($$$) {
         @finished = ();
         foreach my $s (@scripts) {
             my $jobid = $running->{$s};
-            my $state = $self->checkScript($s, $jobid);
+            my $state = $self->check_script($s, $jobid);
             if ($state eq "" or $state eq "C") {
                 if (Plgd::Script::waitScript($s, 60, 5, 1)) {
                     push @finished, $s
@@ -126,7 +122,7 @@ sub stop_all($) {
 
     my $running = $self->{running};
     foreach my $i (keys %$running) {
-        $self->stopScript($running->{$i});
+        $self->stop_script($running->{$i});
         delete $running->{$i};
     }
 }

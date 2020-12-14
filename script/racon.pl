@@ -89,7 +89,7 @@ sub cmdPolish($) {
             [$cfg->{"MINIMAP2_OPTIONS"}, $cfg->{"RACON_OPTIONS"}],
             [$cfg->{"READ_BLOCK_SIZE"}, $cfg->{"CONTIG_BLOCK_SIZE"}], "$prjDir/iter_$i");
 
-        $pipeline->run_job($job); 
+        $pipeline->run_jobs($job); 
         $contigs = $polished;
     }    
 

@@ -11,6 +11,24 @@ use Plgd::Job::Parallel;
 
 my $WAITING_FILE_TIME = 3;
 
+
+#use Class::Struct;
+# struct Job => {
+#     prefunc => '$',
+#     postfunc => '$',
+#     name => '$',
+#     ifiles => '@',
+#     ofiles => '@',
+#     gfiles => '@',
+#     mfiles => '@',
+#     cmds => '@',
+#     jobs => '@',
+#     pjobs => '@',
+#     funcs => '@',
+#     msg => '$',
+# };
+
+
 sub create($$$) {
     my ($cls, $pl, %params) = @_;
 
@@ -40,7 +58,6 @@ sub create($$$) {
 sub new() {
     my ($cls, $pl, %params) = @_;
 
-    printf("ssss\n");    
     my $self = {
         pl => $pl,
         name => $params{name},
@@ -64,8 +81,7 @@ sub get_name($) {
 }
 sub get_script_fname($) {
     my ($self) = @_;
-
-    return $self->{pl}->get_script_fname($self->{name});
+    return $self->{pl}->get_script_folder() . "/$self->{name}.sh";
 }
 
 sub get_done_fname() {
@@ -90,10 +106,10 @@ sub preprocess($$) {
     my $script = $self->get_script_fname();
     Plgd::Utils::require_files(@{$self->{ifiles}});
     if (not $self->is_succ_done()) {
-        #Plgd::Utils::deleteFiles(@{$self->{gfiles}}) if ($self->{gfiles}); 
-        #Plgd::Utils::deleteFiles($self->get_done_fname()); 
+        Plgd::Utils::deleteFiles(@{$self->{gfiles}}) if ($self->{gfiles}); 
+        Plgd::Utils::deleteFiles($self->get_done_fname()); 
 
-        #Plgd::Logger::info("Start " . $self->{msg} . ".") if ($self->{msg});
+        Plgd::Logger::info("Start " . $self->{msg} . ".") if ($self->{msg});
         return 0;
     }
     return 1;
@@ -106,7 +122,7 @@ sub postprocess($$) {
 
         Plgd::Utils::waitRequiredFiles($WAITING_FILE_TIME, @{$self->{ofiles}});
         
-        #Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
+        Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
         
         Plgd::Logger::info("End " .$self->{msg} . ".") if ($self->{msg});
     } else {
@@ -126,6 +142,16 @@ sub run($) {
     }
     $self->postprocess($skipped);
 
+}
+
+sub submit($) {
+    my ($self) = @_;
+    $self->run();
+}
+
+sub poll($) {
+    my ($self) = @_;
+    # empty
 }
 
 1;

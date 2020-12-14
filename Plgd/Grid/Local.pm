@@ -19,7 +19,7 @@ sub new ($) {
 
 }
 
-sub submitScript ($$$$$) {
+sub submit_script ($$$$$) {
     my ($self, $script, $thread, $memory, $options) = @_;
 
     printf("script $script\n");
@@ -46,12 +46,12 @@ sub submitScript ($$$$$) {
     }
 }
 
-sub stopScript($$) {
+sub stop_script($$) {
     my ($self, $job) = @_;
     kill("KILL", $job);
 }
 
-sub checkScript($$$) {
+sub check_script($$$) {
     my ($self, $script, $jobid) = @_;
  
     my $r = waitpid($jobid, WNOHANG) ;

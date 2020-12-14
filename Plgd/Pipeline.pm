@@ -5,7 +5,6 @@ use warnings;
 
 use Cwd;
 
-use Class::Struct;
 
 
 use Plgd::Config;
@@ -15,21 +14,6 @@ use Plgd::Grid;
 
 # short module name
 use constant Logger => 'Plgd::Logger';
-
-struct Job => {
-    prefunc => '$',
-    postfunc => '$',
-    name => '$',
-    ifiles => '@',
-    ofiles => '@',
-    gfiles => '@',
-    mfiles => '@',
-    cmds => '@',
-    jobs => '@',
-    pjobs => '@',
-    funcs => '@',
-    msg => '$',
-};
 
 my $WAITING_FILE_TIME = 3;
 
@@ -84,11 +68,6 @@ sub get_config2($$$) {
     return $self->{cfg}->get2($name0, $name1);
 }
 
-sub get_script_fname($$) {
-    my ($self, $name) = @_;
-    return $self->get_script_folder() . "/$name.sh";
-}
-
 sub get_script_folder($) {
     my ($self) = @_;
     return $self->get_project_folder() . "/scripts";
@@ -105,25 +84,13 @@ sub newjob($$) {
     return Plgd::Job->create($self, %params);
 }
 
-sub run_job($$) {
-    my ($self, $job) = @_;
-    $job->run();
-}
-
-
-sub serialRunJobs {
+sub run_jobs {
     my ($self, @jobs) = @_;
 
     foreach my $job (@jobs) {
-        $self->runJob($job);
+        $job->run();
     }
 }
-
-sub runJob ($$) {
-    my ($self, $job) = @_;
-    $job->run();
-}
-
 
 sub parallelRunJobs {
     my ($self, @jobs) = @_;
@@ -135,12 +102,8 @@ sub parallelRunJobs {
     my @running = ();
     my @scripts = ();
     foreach my $job (@jobs) {
-        
-        #if (scalar @{$job->{funcs}} > 0 || scalar @{$job->{jobs}} > 0) {
-        #    Plgd::Logger::error("Only cmds can run parallel.");
-        #}
 
-        my $script = $self->get_script_fname($job->{name});
+        my $script = $job->get_script_fname();
         
         require_files(@{$job->{ifiles}});
         if (filesNewer($job->{ifiles}, $job->{ofiles}) or not isScriptSucc($script)) {
@@ -184,16 +147,6 @@ sub scriptEnv($) {
 
 }
 
-
-sub run_scripts {
-    my ($self, @scripts) = @_;
-        
-    my $threads = $self->get_config("THREADS") + 0;
-    my $memroy = $self->get_config("MEMORY") + 0;
-    my $options = $self->get_config("GRID_OPTIONS");
-    $self->{grid}->run_scripts($threads, $memroy, $options, \@scripts);
-    #$self->runScriptsGrid(\@scripts);
-}
 
 sub stop_running($) {
     my ($self) = @_;

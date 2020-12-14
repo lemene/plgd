@@ -25,7 +25,7 @@ sub new ($) {
 }
 
 
-sub submitScript($$$$$) {
+sub submit_script($$$$$) {
 
     my ($cls, $script, $thread, $memory, $options) = @_;
 
@@ -49,14 +49,14 @@ sub submitScript($$$$$) {
 }
 
 
-sub stopScript($$) {
+sub stop_script($$) {
     my ($cls, $job) = @_;
     my $cmd = "qdel $job";
     Plgd::Logger::info("Stop script: $cmd");
     `$cmd`;
 }
 
-sub checkScript($$$) {
+sub check_script($$$) {
     my ($cls, $script, $jobid) = @_;
     my $state = "";
     open(F, "qstat |");

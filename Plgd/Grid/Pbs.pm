@@ -45,7 +45,7 @@ sub new($) {
 }
 
 
-sub submitScript($$$$) {
+sub submit_script($$$$) {
     
     my ($self, $script, $thread, $memory, $options) = @_;
 

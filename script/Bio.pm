@@ -180,7 +180,7 @@ sub runRead2ReadParallelly($$$$$$$) {
 
     );
 
-    serialRunJobs($env, $cfg, Job->new(
+    run_jobs($env, $cfg, Job->new(
         name => "${name}_job",
         ifiles => [$reads],
         ofiles => [$rd2rd],
@@ -281,7 +281,7 @@ sub runAssemble($$$$$$$) {
         msg => "assembling, $name",
     );
 
-    serialRunJobs($env, $cfg, Job->new(
+    run_jobs($env, $cfg, Job->new(
         name => "${name}_job",
         ifiles => [$reads, $overlaps],
         ofiles => [$contigs],

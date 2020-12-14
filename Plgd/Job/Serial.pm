@@ -20,8 +20,8 @@ sub run_core($) {
         
     Plgd::Logger::info("Job::Serial::run_core $self->{name}");
 
-    foreach my $j (@{$self->{jobs}}) {
-        $self->{pl}->runJob($j);
+    foreach my $job (@{$self->{jobs}}) {
+        $job->run();
     }
     Plgd::Utils::echoFile($self->get_done_fname(), "0");
 }

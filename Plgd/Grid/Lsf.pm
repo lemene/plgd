@@ -26,7 +26,7 @@ sub new ($) {
     }
 }
 
-sub submitScript($$$$) {
+sub submit_script($$$$) {
     Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     my ($self, $script, $thread, $memory, $options) = @_;
 
@@ -52,7 +52,7 @@ sub submitScript($$$$) {
 }
 
 
-sub stopScript($$) {
+sub stop_script($$) {
     
     Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     
@@ -63,7 +63,7 @@ sub stopScript($$) {
     `$cmd`;
 }
 
-sub checkScript($$) {
+sub check_script($$) {
     Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     my ($self, $script, $jobid) = @_;
 
