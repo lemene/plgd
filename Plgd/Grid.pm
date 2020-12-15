@@ -15,6 +15,8 @@ sub new {
     my $self = {
         max_jobs =>  $max_jobs,
         running => {},
+        waiting => {},
+        #finished => {},
     };
 
     bless $self, $cls;
@@ -57,35 +59,117 @@ sub create($$) {
 }
 
 
-sub run_scripts {
-    my ($self, $threads, $memory, $options, $scripts) = @_;
-
+sub submit_script($$$$$) {
+    my ($self, $script, $threads, $memory, $options) = @_;
 
     my $running = $self->{running};
     my $max_jobs = $self->{max_jobs};
+    my $waiting = $self->{waiting};
+
+    $waiting->{$script} = [$threads, $memory, $options];
+    $self->poll("");
+}
+
+# return 0 没有运行 1 表示正在运行
+sub poll($$) {
+    my ($self, $script) = @_;
+
+    my $waiting = $self->{waiting};
+    my $running = $self->{running};
+    #my $finished = $self->{finished};
+    my $max_jobs = $self->{max_jobs};
+
+    my @finished = ();
+    # 首先检查是否有结束的应用
+    foreach my $s (keys %$running) {
+        my $jobid = $running->{$s};
+        my $state = $self->check_script($s, $jobid);
+        if ($state eq "" or $state eq "C") {
+            push @finished, $s;
+        }
+    }
+
+    delete @$running{@finished};
+
+    foreach my $s (keys %$waiting) {
+        if ($max_jobs == 0 or (keys %$running) < $max_jobs) {
+            Plgd::Logger::info("Run script $s");
+            my ($threads, $memory, $options) = @{$waiting->{$s}};
+            my $r = $self->submit($s, $threads, $memory, $options);
+            Plgd::Logger::error("Failed to submit script $s") if (not $r);
+            $running->{$s} = $r;
+        }
+    }
+
+    delete @$waiting{keys %$running};
+
+    if ($script) {
+        foreach my $s (keys %$waiting) {
+            if ($script eq $s) {
+                return 1;
+            }
+        }
+        foreach my $s (keys %$running) {
+            if ($script eq $s) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 0;
+}
+
+sub run_scripts {
+    my ($self, $threads, $memory, $options, $scripts) = @_;
 
     foreach my $s (@$scripts) {
-        Plgd::Logger::info("Run script $s");
-        my $r = $self->submit_script($s, $threads, $memory, $options);
-        Plgd::Logger::error("Failed to submit script $s") if (not $r);
-        
-        $running->{$s} = $r;
-        #my $rsize = keys (%$running);
-	    if ($max_jobs > 0 and (keys %$running) >= $max_jobs) {
-            my @finished = $self->wait_running(1);
-	        foreach my $i (@finished) {
-                delete $running->{$i};
+        $self->submit_script($s, $threads, $memory, $options);
+    }
+
+    my $finished = 0;
+    while ($finished < scalar @$scripts) {
+        $finished = 0;
+        foreach my $s (@$scripts) {
+            my $r = $self->poll($s);
+            printf("run_scripts poll $r\n");
+            if ($r == 0) {
+                $finished += 1;
             }
-            Plgd::Script::checkScripts(@finished);
         }
-        
+        sleep(5);
     }
-    my @finished = $self->wait_running(0);
-    foreach my $i (@finished) {
-        delete $running->{$i};
-    }
-    Plgd::Script::checkScripts(@finished);
+    Plgd::Script::checkScripts(@$scripts);
 }
+
+# sub run_scripts {
+#     my ($self, $threads, $memory, $options, $scripts) = @_;
+
+
+#     my $running = $self->{running};
+#     my $max_jobs = $self->{max_jobs};
+
+#     foreach my $s (@$scripts) {
+#         Plgd::Logger::info("Run script $s");
+#         my $r = $self->submit($s, $threads, $memory, $options);
+#         Plgd::Logger::error("Failed to submit script $s") if (not $r);
+        
+#         $running->{$s} = $r;
+#         #my $rsize = keys (%$running);
+# 	    if ($max_jobs > 0 and (keys %$running) >= $max_jobs) {
+#             my @finished = $self->wait_running(1);
+# 	        foreach my $i (@finished) {
+#                 delete $running->{$i};
+#             }
+#             Plgd::Script::checkScripts(@finished);
+#         }
+        
+#     }
+#     my @finished = $self->wait_running(0);
+#     foreach my $i (@finished) {
+#         delete $running->{$i};
+#     }
+#     Plgd::Script::checkScripts(@finished);
+# }
 
 
 sub wait_running($$$) {

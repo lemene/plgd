@@ -19,19 +19,13 @@ sub new ($) {
 
 }
 
-sub submit_script ($$$$$) {
+sub submit ($$$$$) {
     my ($self, $script, $thread, $memory, $options) = @_;
-
-    printf("script $script\n");
-    printf("thread $thread\n");
-
-    printf("memory $memory\n");
-    printf("options $options\n");
 
     my $jobName = basename($script);
 
     my $pid = 0;
-    my $cmd = "$script 2>&1 | tee $script.log";                                               # script
+    my $cmd = "$script 2>&1 | tee $script.log";                     # script
 
     if(!defined($pid = fork())) {
         # fork returned undef, so unsuccessful

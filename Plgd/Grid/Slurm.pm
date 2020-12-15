@@ -28,7 +28,7 @@ sub new ($) {
 }
 
 
-sub submit_script ($$$$$) {
+sub submit ($$$$$) {
     my ($self, $script, $thread, $memory, $options) = @_;
 
     my $jobName = basename($script);

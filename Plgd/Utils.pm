@@ -67,24 +67,35 @@ sub echoFile($$) {
     close(F);
 }
 
-sub filesNewer($$) {
+sub file_exist($) {
+    my ($files) = @_;
+
+    foreach my $f (@$files) {
+        if (not -e $f) {return 0; }
+    }
+
+    return 1;
+}
+
+sub files_newer($$) {
     my ($files1, $files2) = @_;
 
     my $tm = 0;
     
-    return 1 if ((scalar @$files1 == 0 ) or (scalar @$files2 == 0));
+    return 0 if ((scalar @$files1 == 0 ) or (scalar @$files2 == 0));
 
     foreach my $f (@$files1) {
-        if ((-e $f) and (stat($f))[9] > $tm) {
+        if (not -e $f) {return 0; }
+        if ((stat($f))[9] > $tm) {
             $tm = (stat($f))[9];
         }
     }
 
     foreach my $f (@$files2) {
-        if (not -e $f) {return 1; }
-        if ((stat($f))[9] < $tm) { return 1;}
+        if (not -e $f) {return 0; }
+        if ((stat($f))[9] < $tm) { return 0;}
     }
-    return 0;
+    return 1;
 }
 
 sub stringToOptions($) {

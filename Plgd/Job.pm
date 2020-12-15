@@ -93,7 +93,9 @@ sub is_succ_done($) {
     my ($self) = @_;
 
     my $script = $self->get_script_fname();
-    return Plgd::Utils::filesNewer($self->{ofiles}, $self->{ifiles}) and Plgd::Script::isScriptSucc($script);
+    return Plgd::Utils::file_exist($self->{ofiles}) and 
+           Plgd::Utils::files_older($self->{ofiles}, $self->{ifiles}) and 
+           Plgd::Script::isScriptSucc($script);
 }
 
 sub preprocess($$) {
@@ -102,7 +104,7 @@ sub preprocess($$) {
 
     Plgd::Logger::info("Start running job $self->{name}, $self->{msg}");
     $self->{prefunc}->($self) if ($self->{prefunc});
-    
+
     my $script = $self->get_script_fname();
     Plgd::Utils::require_files(@{$self->{ifiles}});
     if (not $self->is_succ_done()) {

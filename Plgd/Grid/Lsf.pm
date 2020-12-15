@@ -26,7 +26,7 @@ sub new ($) {
     }
 }
 
-sub submit_script($$$$) {
+sub submit($$$$) {
     Plgd::Logger::warn("TODO: The code for Lsf isn't tested");
     my ($self, $script, $thread, $memory, $options) = @_;
 

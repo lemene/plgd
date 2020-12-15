@@ -18,15 +18,20 @@ sub run_core() {
     my ($self) = @_;
     Plgd::Logger::info("Job::Parallel::run_core $self->{name}");
 
-    #$self->{pl}->parallelRunJobs(@{$self->{pjobs}});
-
-    my @running = ();
     foreach my $job (@{$self->{pjobs}}) {
         $job->submit();
     }
 
-    foreach my $job (@{$self->{pjobs}}) {
-        $job->poll();
+    my $count = scalar @{$self->{pjobs}};
+
+    while ($count > 0) {
+        $count = 0;
+        foreach my $job (@{$self->{pjobs}}) {
+            my $r = $job->poll();
+            if ($r == 1) {
+                $count += 1;
+            }
+        }
     }
 
     Plgd::Utils::echoFile($self->get_done_fname(), "0");
