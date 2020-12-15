@@ -41,7 +41,9 @@ sub poll() {
             $self->{submit_state} = "stop";
             $self->postprocess(0);
         }
+        return $r;
     }
+    return 0;
 }
 
 

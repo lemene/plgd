@@ -93,9 +93,19 @@ sub is_succ_done($) {
     my ($self) = @_;
 
     my $script = $self->get_script_fname();
-    return Plgd::Utils::file_exist($self->{ofiles}) and 
-           Plgd::Utils::files_older($self->{ofiles}, $self->{ifiles}) and 
-           Plgd::Script::isScriptSucc($script);
+    if (not Plgd::Script::isScriptSucc($script)) { return 0; }
+
+    if (scalar @{$self->{ofiles}} > 0) {
+        if (not Plgd::Utils::file_exist($self->{ofiles})) { return 0; }
+
+        if (scalar @{$self->{ofiles}} > 0) {
+            if (not Plgd::Utils::file_newer($self->{ofiles}, $self->{ifiles})) {
+                return 0;
+            }
+        }
+    }
+
+    return 1;
 }
 
 sub preprocess($$) {
@@ -154,6 +164,7 @@ sub submit($) {
 sub poll($) {
     my ($self) = @_;
     # empty
+    return 0;
 }
 
 1;

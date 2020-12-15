@@ -77,25 +77,35 @@ sub file_exist($) {
     return 1;
 }
 
-sub files_newer($$) {
-    my ($files1, $files2) = @_;
+sub file_latest_mtime($) {
+    my ($files) = @_;
 
     my $tm = 0;
-    
-    return 0 if ((scalar @$files1 == 0 ) or (scalar @$files2 == 0));
-
-    foreach my $f (@$files1) {
-        if (not -e $f) {return 0; }
+    foreach my $f (@$files) {
         if ((stat($f))[9] > $tm) {
             $tm = (stat($f))[9];
         }
     }
+    return $tm;
+}
 
-    foreach my $f (@$files2) {
-        if (not -e $f) {return 0; }
-        if ((stat($f))[9] < $tm) { return 0;}
+sub file_earliest_mtime($) {
+    my ($files) = @_;
+
+    my $tm = -1;
+    foreach my $f (@$files) {
+        if ($tm < 0 or (stat($f))[9] < $tm) {
+            $tm = (stat($f))[9];
+        }
     }
-    return 1;
+    return $tm;
+
+}
+
+sub file_newer($$) {
+    my ($files1, $files2) = @_;
+
+    return file_earliest_mtime($files1) > file_latest_mtime($files2);
 }
 
 sub stringToOptions($) {

@@ -28,10 +28,13 @@ sub run_core() {
         $count = 0;
         foreach my $job (@{$self->{pjobs}}) {
             my $r = $job->poll();
+                printf("xxxxxxxx poll = $r\n");
             if ($r == 1) {
                 $count += 1;
             }
         }
+        printf("xxxxxxxx count = $count\n");
+        sleep(5);
     }
 
     Plgd::Utils::echoFile($self->get_done_fname(), "0");
