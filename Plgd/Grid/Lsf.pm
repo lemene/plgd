@@ -8,8 +8,10 @@ use warnings;
 use File::Basename;
 use Plgd::Utils;
 
-sub new ($) {
-    my ($cls) = @_;
+sub new ($$) {
+    my ($cls, $max_jobs) = @_;
+    
+    my $self = $cls->SUPER::new($max_jobs); 
 
     my $path = `which bsub 2> /dev/null`;
     $path = trim($path);

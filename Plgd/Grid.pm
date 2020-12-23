@@ -9,7 +9,7 @@ use Plgd::Grid::Sge;
 use Plgd::Grid::Lsf;
 use Plgd::Grid::Slurm;
 
-sub new {
+sub new($$) {
     my ($cls, $max_jobs) = @_;
 
     my $self = {

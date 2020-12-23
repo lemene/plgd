@@ -7,13 +7,13 @@ use File::Basename;
 
 our @ISA = qw(Plgd::Grid);  
 
-sub new ($) {   
-    my ($cls) = @_;
+sub new ($$) {   
+    my ($cls, $max_jobs) = @_;
 
-    my $self = $cls->SUPER::new(); 
+    my $self = $cls->SUPER::new($max_jobs); 
     $self->{name} = "local";
     $self->{path} = "";
-    $self->{max_jobs} = 1;
+    $self->{max_jobs} = $max_jobs == 0 ? 1 : $max_jobs;
     bless $self, $cls;
     return $self;
 

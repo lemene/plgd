@@ -10,8 +10,10 @@ use File::Basename;
 use Plgd::Utils;
 
 
-sub new ($) {
-    my ($cls) = @_;
+sub new ($$) {
+    my ($cls, $max_jobs) = @_;
+    
+    my $self = $cls->SUPER::new($max_jobs); 
 
     if (defined($ENV{'SGE_ROOT'})) {
         my $self = $cls->SUPER::new(); 

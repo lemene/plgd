@@ -32,25 +32,15 @@ my $WAITING_FILE_TIME = 3;
 sub create($$$) {
     my ($cls, $pl, %params) = @_;
 
-        my $name = $params{name};
-        my $n = exists $params{pjobs};
-        printf("$name create job $n \n");
-
     if (exists $params{cmds}) {      # 
-        printf("script job $name\n");
         return Plgd::Job::Script->new($pl, %params);
     } elsif (exists $params{jobs}) {
-        printf("serial job $name\n");
         return Plgd::Job::Serial->new($pl, %params);
-#    } elsif (exists $params{pjobs} and scalar @{$params{pjobs}} > 0) {
     } elsif (exists $params{pjobs}) {
-        printf("Parallel job $name\n");
         return Plgd::Job::Parallel->new($pl, %params);
     } elsif (exists $params{funcs}) {
-        printf("Function job $name\n");
         return Plgd::Job::Function->new($pl, %params);
     } else {
-        printf("undef job $name\n");
         return undef;
     }
 }
