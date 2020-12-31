@@ -15,9 +15,8 @@ sub new ($) {
 
 }
 
-sub submit() {
+sub submit($) {
     my ($self) = @_;
-    printf("submit ----\n");
     my $skipped = $self->preprocess();
     if (not $skipped) {
         my $script = $self->get_script_fname();
@@ -30,7 +29,7 @@ sub submit() {
 }
 
 
-sub poll() {
+sub poll($) {
     my ($self) = @_;
 
     if ($self->{submit_state} eq "running") {
@@ -51,6 +50,12 @@ sub run_scripts {
     my ($self, @scripts) = @_;
         
     my $threads = $self->{pl}->get_config("THREADS") + 0;
+    if (exists $self->{threads} and $self->{threads} > 0) {
+        if ( $self->{threads} < $threads) {
+            $threads =  $self->{threads};
+        }
+    }
+    printf("--xx- threads : $threads\n");
     my $memroy = $self->{pl}->get_config("MEMORY") + 0;
     my $options = $self->{pl}->get_config("GRID_OPTIONS");
     $self->{pl}->{grid}->run_scripts($threads, $memroy, $options, \@scripts);
@@ -60,6 +65,12 @@ sub submit_script {
     my ($self, $script) = @_;
         
     my $threads = $self->{pl}->get_config("THREADS") + 0;
+    if (exists $self->{threads} and $self->{threads} > 0) {
+        if ( $self->{threads} < $threads) {
+            $threads =  $self->{threads};
+        }
+    }
+    printf("--- threads : $threads\n");
     my $memroy = $self->{pl}->get_config("MEMORY") + 0;
     my $options = $self->{pl}->get_config("GRID_OPTIONS");
     $self->{pl}->{grid}->submit_script($script, $threads, $memroy, $options);

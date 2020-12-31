@@ -57,7 +57,8 @@ sub new() {
         mfiles => $params{mfiles},
         msg => $params{msg},
         prefunc => $params{prefunc},
-        postfunc => $params{postfunc}
+        postfunc => $params{postfunc},
+        threads => $params{threads},
     };
 
     bless $self, $cls;

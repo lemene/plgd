@@ -11,14 +11,12 @@ use Plgd::Utils;
 
 sub new ($$) {
     my ($cls, $max_jobs) = @_;
-    
-    my $self = $cls->SUPER::new($max_jobs); 
-
     my $path = `which sinfo 2> /dev/null`;
     $path = trim($path);
 
     if (not $path eq "") {
-        my $self = $cls->SUPER::new(); 
+        my $self = $cls->SUPER::new($max_jobs); 
+
         $self->{name} = "slurm";
         $self->{path} = $path;
 
