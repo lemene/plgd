@@ -17,7 +17,7 @@ sub new ($) {
 
 sub run_core() {
     my ($self) = @_;
-    foreach my $f (@{$self->funcs}) {
+    foreach my $f (@{$self->{funcs}}) {
         $f->();
     }
 }
