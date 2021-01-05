@@ -35,7 +35,7 @@ sub run_core() {
         sleep(5);
     }
 
-    Plgd::Utils::echoFile($self->get_done_fname(), "0");
+    Plgd::Utils::echo_file($self->get_done_fname(), "0");
 }
 
 1;

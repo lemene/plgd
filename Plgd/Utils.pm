@@ -59,7 +59,7 @@ sub linesInFile($) {
 
 ## echo's function
 ## For effect of 'echo -e' is inconsistent on different platforms.
-sub echoFile($$) {
+sub echo_file($$) {
     my ($fname, $msg) = @_;
     
     open(F, "> $fname") or die; 

@@ -23,7 +23,7 @@ sub run_core($) {
     foreach my $job (@{$self->{jobs}}) {
         $job->run();
     }
-    Plgd::Utils::echoFile($self->get_done_fname(), "0");
+    Plgd::Utils::echo_file($self->get_done_fname(), "0");
 }
 
 1;
