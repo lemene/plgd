@@ -24,14 +24,16 @@ sub writeScript {
     {
         open(F, "> $fname") or die;
         print F "#!/bin/bash\n\n";
+        print F "echo \"Plgd script start: \$(date \"+%Y-%m-%d %H:%M:%S\")\"\n";
         print F "$env";
 
         print F "retVal=0\n";
 
         my $wrapCmds = wrapCommands(@cmds);
-        print F "$wrapCmds\n";
+        print F "$wrapCmds\n"; 
 
         print F "echo \$retVal > $fname.done\n";
+        print F "echo \"Plgd script end: \$(date \"+%Y-%m-%d %H:%M:%S\")\"\n";
         close(F);
 
         chmod(0755 & ~umask(), $fname);

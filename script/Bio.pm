@@ -30,7 +30,7 @@ sub jobExtract($$$$$$) {
     
     my @cmds = ();
     if ($basesize > 0) {
-        push @cmds, "$binPath/fsa_rd_tools longest --ifname=$ifname --ofname=$ofnTemp --base_size=$basesize";
+        push @cmds, "$binPath/fsa_rd_tools longest $ifname $ofnTemp --base_size=$basesize";
     } else {
         push @cmds, "$binPath/fsa_rd_tools copy --ifname=$ifname --ofname=$ofnTemp";
     }
@@ -124,7 +124,7 @@ sub runRead2ReadParallelly($$$$$$$) {
         ofiles => [],   # prefunc
         gfiles => [],   # prefunc
         mfiles => [],
-        cmds => ["$binPath/fsa_rd_tools split --ifname $reads --ofname $workDir/cc{}.fasta --block_size=$blocksize"],
+        cmds => ["$binPath/fsa_rd_tools split $reads $workDir/cc{}.fasta --block_size=$blocksize"],
         msg => "spliting reads, $name",
     );
 
