@@ -15,7 +15,7 @@ sub new ($) {
 
 }
 
-sub run_core($) {
+sub submit_core($) {
     my ($self) = @_;
         
     Plgd::Logger::info("Job::Serial::run_core $self->{name}");

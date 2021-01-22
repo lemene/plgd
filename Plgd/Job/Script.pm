@@ -15,51 +15,25 @@ sub new ($) {
 
 }
 
-sub submit($) {
+sub submit_core($) {
     my ($self) = @_;
-    my $skipped = $self->preprocess();
-    if (not $skipped) {
-        my $script = $self->get_script_fname();
-        $self->write_script($script, $self->{pl}->scriptEnv(), @{$self->{cmds}});
-        $self->{submit} = $self->submit_script($script);
-        $self->{submit_state} = "running";
-    } else {
-        $self->postprocess(1);
-    }
+    my $script = $self->get_script_fname();
+    $self->write_script($script, $self->{pl}->scriptEnv(), @{$self->{cmds}});
+    $self->{submit} = $self->submit_script($script);
 }
 
-
-sub poll($) {
+sub poll_core($) {
     my ($self) = @_;
 
-    if ($self->{submit_state} eq "running") {
-        my $r = $self->{pl}->{grid}->poll($self->get_script_fname());
-        if ($r == 0) {
-            Plgd::Script::waitScript($self->get_script_fname(), 60, 5, 1);
-            $self->{submit} = undef;
-            $self->{submit_state} = "stop";
-            $self->postprocess(0);
-        }
-        return $r;
+    my $r = $self->{pl}->{grid}->poll($self->get_script_fname());
+    if ($r == 0) {
+        $self->wait_script(60, 5, 1);
+        $self->{submit} = undef;
     }
-    return 0;
+    return $r;
+    
 }
 
-
-sub run_scripts {
-    my ($self, @scripts) = @_;
-        
-    my $threads = $self->{pl}->get_config("THREADS") + 0;
-    if (exists $self->{threads} and $self->{threads} > 0) {
-        if ( $self->{threads} < $threads) {
-            $threads =  $self->{threads};
-        }
-    }
-    printf("--xx- threads : $threads\n");
-    my $memroy = $self->{pl}->get_config("MEMORY") + 0;
-    my $options = $self->{pl}->get_config("GRID_OPTIONS");
-    $self->{pl}->{grid}->run_scripts($threads, $memroy, $options, \@scripts);
-}
 
 sub submit_script {
     my ($self, $script) = @_;
@@ -70,24 +44,11 @@ sub submit_script {
             $threads =  $self->{threads};
         }
     }
-    printf("--- threads : $threads\n");
     my $memroy = $self->{pl}->get_config("MEMORY") + 0;
     my $options = $self->{pl}->get_config("GRID_OPTIONS");
     $self->{pl}->{grid}->submit_script($script, $threads, $memroy, $options);
 }
 
-
-
-sub run_core($) {
-    my ($self) = @_;
-        
-    Plgd::Logger::info("Job::Script::run_core $self->{name}");
-
-    my $script = $self->get_script_fname();
-    $self->write_script($script, $self->{pl}->scriptEnv(), @{$self->{cmds}});
-    $self->run_scripts($script);
-    
-}
 
 
 sub write_script {
@@ -103,7 +64,7 @@ sub write_script {
 
         print F "retVal=0\n";
 
-        my $wrapCmds = Plgd::Script::wrapCommands(@cmds);
+        my $wrapCmds = wrap_commands(@cmds);
         print F "$wrapCmds\n";
 
         print F "echo \$retVal > $fname.done\n";
@@ -112,6 +73,59 @@ sub write_script {
 
         chmod(0755 & ~umask(), $fname);
     } 
+}
+
+# wait the scripts is over
+# 1: script files
+# 2: waiting time
+# 3: interval time
+# 4: be silent
+sub wait_script($$$$) {
+    my ($self, $waitTime, $interval, $silent) = @_;
+ 
+    my $script = $self->get_script_fname();
+
+    my $startTime = time();
+ 
+    while (not $self->is_done()) {
+        if ($waitTime > 0 and time() - $startTime > $waitTime) {
+            return 0;
+        }
+
+        if (not $silent) {
+            Plgd::Logger::info("Wait script fininshed $script");
+        }
+        sleep($interval);
+    }
+    return 1;
+}
+
+sub wrap_commands {
+    my $str = "";
+    foreach my $c (@_) {
+        #$str = $str . 
+        #       "if [ \$retVal -eq 0 ]; then\n" .
+        #       "  $c\n" .
+        #       "  temp_result=\$?\n" .
+        #       "  if [ \$retVal -eq 0 ]; then\n".
+        #       "    retVal=\$temp_result\n" .
+        #       "  fi\n" .
+        #       "fi\n";
+        $str = $str . 
+               "if [ \$retVal -eq 0 ]; then\n" .
+               "  $c\n" .
+               "  temp_result=(\${PIPESTATUS[*]})\n" .
+               "  for i in \${temp_result[*]} \n" .
+               "  do\n" .
+               "    if [ \$retVal -eq 0 ]; then\n" .
+               "      retVal=\$i\n" .
+               "    else\n" .
+               "      break\n" .
+               "    fi\n" .
+               "  done\n".
+               "fi\n";
+    }
+    return $str;
 }
 
 1;

@@ -92,53 +92,6 @@ sub run_jobs {
     }
 }
 
-sub parallelRunJobs {
-    my ($self, @jobs) = @_;
-    
-
-    my $prjDir = $self->get_project_folder();
-
-    # check which job should be run
-    my @running = ();
-    my @scripts = ();
-    foreach my $job (@jobs) {
-
-        my $script = $job->get_script_fname();
-        
-        require_files(@{$job->{ifiles}});
-        if (filesNewer($job->{ifiles}, $job->{ofiles}) or not isScriptSucc($script)) {
-            unlink @{$job->{ofiles}};
-
-            writeScript($script, $self->scriptEnv(), @{$job->{cmds}});
-            push @scripts, $script;
-            push @running, $job;
-        } else {
-            Plgd::Logger::info("Skip ". $job->msg . " for outputs are newer.") if ($job->msg);
-        }
-    }
-    
-    
-    if (scalar @scripts > 0) {
-        foreach my $job (@running) {
-            Plgd::Logger::info("Parallelly start " . $job->{msg} . ".") if ($job->{msg});
-        }
-
-        $self->run_scripts(@scripts);
-
-        foreach my $job (@running) {
-
-            waitRequiredFiles($WAITING_FILE_TIME, @{$job->{ofiles}});
-            
-            if ($self->get_config("CLEANUP") == 1) {
-                deleteFiles(@{$job->{mfiles}});
-            }
-
-            Plgd::Logger::info("End " .$job->{msg}. ".") if ($job->{msg});
-        }
-    }
-
-}
-
 
 sub scriptEnv($) {
     my ($self) = @_;

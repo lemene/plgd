@@ -14,7 +14,7 @@ sub new ($) {
     return $self;
 }
 
-sub run_core() {
+sub submit_core() {
     my ($self) = @_;
     Plgd::Logger::info("Job::Parallel::run_core $self->{name}");
 

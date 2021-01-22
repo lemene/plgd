@@ -83,8 +83,7 @@ sub get_done_fname() {
 sub is_succ_done($) {
     my ($self) = @_;
 
-    my $script = $self->get_script_fname();
-    if (not Plgd::Script::isScriptSucc($script)) { return 0; }
+    if (not $self->is_done_succ()) { return 0; }
 
     if (scalar @{$self->{ofiles}} > 0) {
         if (not Plgd::Utils::file_exist($self->{ofiles})) { return 0; }
@@ -97,6 +96,36 @@ sub is_succ_done($) {
     }
 
     return 1;
+}
+
+
+sub is_done($) {
+    my ($self) = @_;
+    my $done =  $self->get_done_fname();
+    my $script = $self->get_script_fname();
+
+    return (-e $done) and (stat($script))[9] <= (stat($done))[9];
+}
+
+sub is_done_succ($) {
+    my ($self) = @_;
+    return $self->is_done() and $self->get_return_code() == 0;
+}
+
+
+sub get_return_code($) {
+    my ($self) = @_;
+    my $done =  $self->get_done_fname();
+
+    my $ret_code = 127;
+    if (-e $done) {
+        open F, "< $done" or die;
+        while(<F>){
+            $ret_code = 0 + $_; # Transfer string to number;
+            last;
+        }
+    }
+    return $ret_code;
 }
 
 sub preprocess($$) {
@@ -138,23 +167,43 @@ sub postprocess($$) {
 sub run($) {
     my ($self) = @_;
 
-    my $skipped = $self->preprocess();
-
-    if (not $skipped) {
-        $self->run_core();
+    $self->submit();
+    my $r = $self->poll();
+    while ($r != 0) {
+        sleep(5);
+        $r = $self->poll();
     }
-    $self->postprocess($skipped);
-
 }
 
 sub submit($) {
     my ($self) = @_;
-    $self->run();
+    my $skipped = $self->preprocess();
+    if (not $skipped) {
+        $self->{state} = "running";
+        $self->submit_core();
+    } else {
+        $self->postprocess(1);
+    }
 }
+
 
 sub poll($) {
     my ($self) = @_;
-    # empty
+
+    my $r = 0;
+    if ($self->{state} eq "running") {
+        $r = $self->poll_core();
+        if ($r == 0) {
+            $self->{state} = "stop";
+            $self->postprocess(0);
+        }
+    }
+    return $r;
+}
+
+# 1 running
+# 0 stop
+sub poll_core($) {
     return 0;
 }
 
