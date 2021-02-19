@@ -9,7 +9,6 @@ use Cwd;
 
 use Plgd::Config;
 use Plgd::Utils;
-use Plgd::Script;
 use Plgd::Grid;
 
 # short module name
@@ -77,6 +76,11 @@ sub get_project_folder($) {
     my ($self) = @_;
     
     return $self->get_env("WorkPath") ."/". $self->get_config("PROJECT");
+}
+
+sub get_work_folder($$) {
+    my ($self, $folder) = @_;
+    return $self->get_project_folder() . "/$folder";
 }
 
 sub newjob($$) {
