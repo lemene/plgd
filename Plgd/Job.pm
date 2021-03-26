@@ -59,6 +59,7 @@ sub new() {
         prefunc => $params{prefunc},
         postfunc => $params{postfunc},
         threads => $params{threads},
+        state => "stop",
     };
 
     bless $self, $cls;
