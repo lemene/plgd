@@ -39,7 +39,7 @@ sub submit_script {
     my ($self, $script) = @_;
         
     my $threads = $self->{pl}->get_config("THREADS") + 0;
-    if (exists $self->{threads} and $self->{threads} > 0) {
+    if (defined($self->{threads}) and $self->{threads} > 0) {
         if ( $self->{threads} < $threads) {
             $threads =  $self->{threads};
         }

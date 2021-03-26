@@ -59,6 +59,7 @@ sub new() {
         prefunc => $params{prefunc},
         postfunc => $params{postfunc},
         threads => $params{threads},
+        state => "stop",
     };
 
     bless $self, $cls;
@@ -154,7 +155,9 @@ sub postprocess($$) {
 
         Plgd::Utils::waitRequiredFiles($WAITING_FILE_TIME, @{$self->{ofiles}});
         
-        Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
+        if ($self->{pl}->get_config("cleanup") eq "true") {
+            Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
+        }
         
         Plgd::Logger::info("End " .$self->{msg} . ".") if ($self->{msg});
     } else {
