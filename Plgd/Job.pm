@@ -105,12 +105,17 @@ sub is_done($) {
     my $done =  $self->get_done_fname();
     my $script = $self->get_script_fname();
 
-    return (-e $done) and (stat($script))[9] <= (stat($done))[9];
+    if (-e $done) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 sub is_done_succ($) {
     my ($self) = @_;
-    return $self->is_done() and $self->get_return_code() == 0;
+    
+    return $self->is_done() && $self->get_return_code() == 0;
 }
 
 
@@ -153,6 +158,9 @@ sub postprocess($$) {
 
     if (not $skipped) {
 
+        if (not $self->is_succ_done()) {
+            Plgd::Logger::error("Failed to run " . $self->{msg});
+        }
         Plgd::Utils::waitRequiredFiles($WAITING_FILE_TIME, @{$self->{ofiles}});
         
         if ($self->{pl}->get_config("cleanup") eq "true") {
