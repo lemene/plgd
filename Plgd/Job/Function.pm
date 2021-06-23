@@ -10,6 +10,7 @@ sub new ($) {
 
     my $self = $cls->SUPER::new($pl, %params); 
 
+    $self->{funcs} = $params{funcs};
     bless $self, $cls;
     return $self;
 
