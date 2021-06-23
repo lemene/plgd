@@ -21,6 +21,7 @@ sub submit_core() {
     foreach my $f (@{$self->{funcs}}) {
         $f->();
     }
+    Plgd::Utils::echo_file($self->get_done_fname(), "0");
 }
 
 
