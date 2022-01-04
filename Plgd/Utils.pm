@@ -102,10 +102,10 @@ sub file_earliest_mtime($) {
 
 }
 
-sub file_newer($$) {
-    my ($files1, $files2) = @_;
+sub file_newer($$$) {
+    my ($files1, $files2, $th) = @_;
 
-    return file_earliest_mtime($files1) >= file_latest_mtime($files2);
+    return file_earliest_mtime($files1) + $th >= file_latest_mtime($files2);
 }
 
 sub stringToOptions($) {

@@ -90,7 +90,7 @@ sub is_succ_done($) {
         if (not Plgd::Utils::file_exist($self->{ofiles})) { return 0; }
 
         if (scalar @{$self->{ofiles}} > 0) {
-            if (not Plgd::Utils::file_newer($self->{ofiles}, $self->{ifiles})) {
+            if (not Plgd::Utils::file_newer($self->{ofiles}, $self->{ifiles}, 60)) {    # TODO 
                 return 0;
             }
         }
@@ -163,7 +163,7 @@ sub postprocess($$) {
         }
         Plgd::Utils::waitRequiredFiles($WAITING_FILE_TIME, @{$self->{ofiles}});
         
-        if ($self->{pl}->get_config("cleanup") eq "true") {
+        if ($self->{pl}->get_config("cleanup") eq "true" or $self->{pl}->get_config("cleanup") eq "1") {
             Plgd::Utils::deleteFiles(@{$self->{mfiles}}); # 是否需要删除临时文件
         }
         
