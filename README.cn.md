@@ -13,7 +13,10 @@ Cluster定义pipeline运行的集群系统，目前支持pbs、sge、lsf、slurm
 * 集群类型支持`pbs`、`sge`、`lsf`、`slurm`、`local`和`auto`。`auto`表示自动判断所处系统，
 * 任务数目指pipeline同时提交的任务数目，支持0和正整数。0表示不限制任务数目。
 
-# 例子
+# Examples
+minimap2
+racon
+miniasm
 ## racon.pl
 实现minimap2+racon的功能。主要的修改有部分：
 1. minimap2部分，先将reads分成多个文件，然后并行比对到contigs上，最后合并比对结果。
