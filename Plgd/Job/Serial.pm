@@ -17,13 +17,38 @@ sub new ($) {
 
 sub submit_core($) {
     my ($self) = @_;
-        
-    Plgd::Logger::info("Job::Serial::run_core $self->{name}");
-
-    foreach my $job (@{$self->{jobs}}) {
-        $job->run();
+    
+    Plgd::Logger::info("Job::Serial::submit_core $self->{name}");
+    
+    $self->{index} = 0;
+    my $index = $self->{index};
+    if ($index < scalar @{$self->{jobs}}) {
+        $self->{jobs}->[$index]->submit();
     }
-    Plgd::Utils::echo_file($self->get_done_fname(), "0");
+}
+
+sub poll_core($) {
+    my ($self) = @_;
+
+    my $index = $self->{index};
+    my $count = scalar @{$self->{jobs}};
+
+    if ($index < scalar @{$self->{jobs}}) {
+        my $job = $self->{jobs}->[$index];
+        if ($job->poll == 0) {
+            $index ++;
+            
+            if ($index < scalar @{$self->{jobs}}) {
+                $self->{jobs}->[$index]->submit();
+            }
+            $self->{index} = $index;
+        }
+    } 
+
+    if (scalar @{$self->{jobs}} - $index == 0) {
+        Plgd::Utils::echo_file($self->get_done_fname(), "0");
+    }
+    return scalar @{$self->{jobs}}  - $index;
 }
 
 1;

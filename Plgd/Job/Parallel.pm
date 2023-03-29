@@ -14,28 +14,29 @@ sub new ($) {
     return $self;
 }
 
-sub submit_core() {
+sub submit_core($) {
     my ($self) = @_;
-    Plgd::Logger::info("Job::Parallel::run_core $self->{name}");
+    Plgd::Logger::info("Job::Parallel::submit_core $self->{name}");
 
     foreach my $job (@{$self->{pjobs}}) {
         $job->submit();
     }
-
-    my $count = scalar @{$self->{pjobs}};
-
-    while ($count > 0) {
-        $count = 0;
-        foreach my $job (@{$self->{pjobs}}) {
-            my $r = $job->poll();
-            if ($r == 1) {
-                $count += 1;
-            }
-        }
-        sleep(5);
-    }
-
-    Plgd::Utils::echo_file($self->get_done_fname(), "0");
 }
 
+sub poll_core($) {
+    my ($self) = @_;
+
+    my $count = 0;
+    foreach my $job (@{$self->{pjobs}}) {
+        my $r = $job->poll();
+        if ($r != 0) {
+            $count += 1;
+        }
+    }
+
+    if ($count == 0) {
+        Plgd::Utils::echo_file($self->get_done_fname(), "0");
+    }
+    return $count;
+}
 1;

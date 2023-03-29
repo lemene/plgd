@@ -81,18 +81,26 @@ sub get_done_fname() {
     return $self->get_script_fname() . ".done";
 }
 
-sub is_succ_done($) {
-    my ($self) = @_;
+sub is_succ_done($$) {
+    my ($self, $stage) = @_;
+    # stage == 0 preprocess, stage == 1 postprocess
 
     if (not $self->is_done_succ()) { return 0; }
 
     if (scalar @{$self->{ofiles}} > 0) {
         if (not Plgd::Utils::file_exist($self->{ofiles})) { return 0; }
-
-        if (scalar @{$self->{ofiles}} > 0) {
+        if (scalar @{$self->{ifiles}} > 0) {
             if (not Plgd::Utils::file_newer($self->{ofiles}, $self->{ifiles}, 60)) {    # TODO 
                 return 0;
             }
+        } else {
+            if ($stage == 0) {
+                return 0;
+            }
+        }
+    } else {
+        if ($stage == 0) {
+            return 0;
         }
     }
 
@@ -143,7 +151,7 @@ sub preprocess($$) {
 
     my $script = $self->get_script_fname();
     Plgd::Utils::require_files(@{$self->{ifiles}});
-    if (not $self->is_succ_done()) {
+    if (not $self->is_succ_done(0)) {
         Plgd::Utils::deleteFiles(@{$self->{gfiles}}) if ($self->{gfiles}); 
         Plgd::Utils::deleteFiles($self->get_done_fname()); 
 
@@ -158,7 +166,7 @@ sub postprocess($$) {
 
     if (not $skipped) {
 
-        if (not $self->is_succ_done()) {
+        if (not $self->is_succ_done(1)) {
             Plgd::Logger::error("Failed to run " . $self->{msg});
         }
         Plgd::Utils::waitRequiredFiles($WAITING_FILE_TIME, @{$self->{ofiles}});
