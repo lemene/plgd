@@ -113,7 +113,7 @@ sub wrap_commands {
         #       "fi\n";
         $str = $str . 
                "if [ \$retVal -eq 0 ]; then\n" .
-               "  $c\n" .
+               "  /usr/bin/time -v $c\n" .
                "  temp_result=(\${PIPESTATUS[*]})\n" .
                "  for i in \${temp_result[*]} \n" .
                "  do\n" .
